@@ -4,7 +4,7 @@ from ast import keyword
 from lib2to3.pgen2.pgen import generate_grammar
 from logging import WARNING
 import os,sys,re
-from turtle import bgcolor
+from turtle import back, bgcolor
 from isort import file 
 import pandas as pd 
 import shutil 
@@ -19,6 +19,7 @@ import copy
         2022年4月2日：构造了Monte_Carlo_simulation类中，generate_number的内容。将项目上传至GitHub。
         2022年4月3日：构造进程准备类，补完generate_number函数。
         2022年4月4日：开始使用Copilot辅助。构造了Support_MCsim方法，mg5_Execution方法，Get_MG5_info方法。
+        2022年4月5日：构造了Get_CheckMATE_info方法，构造了CM_Execution方法，构造了Support_MCsim中的remove_old_CM_result和after_ck_Execute方法，构造了Prepare_program中的update_ck_r方法。
 '''
 
 class bcolors(object):
@@ -56,6 +57,15 @@ class Prepare_program(object):
                     generate_numbers = list(range(generate_number_range[1] - generate_number_range[0] - 1, 1))              #获得要计算的目标参数点的序列
         return generate_numbers
 
+    def update_ck_r(self) -> None:
+        after_ck_path = os.path.join(self._main_path, '../Externals/ck/')           # 存放ck结果的路径
+        os.chdir(after_ck_path)                                                     # 切换到ck结果存放路径
+        os.system('rm -rf after_ck/ck_r.txt')                                       # 删除旧的ck结果文件
+        #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
+        with open(os.path.join(after_ck_path, 'after_ck/ck_r.txt'), 'w') as ck_r:
+            ck_r.write("Index\tr_smodels\tcs13chi_in\tcs13smu_pb\tcs13chi_pb\n")
+
+
 
 class Monte_Carlo_simulation(object):
     '''
@@ -67,10 +77,11 @@ class Monte_Carlo_simulation(object):
         进程的初始化，获得: 主进程目录，数据目录，generate_number， MadGraph目录
         数据目录包含了Spectrums文件夹，以及ck_input.csv文件。ck_input.csv文件中包含了所有要计算的参数点信息。
         '''
-        main_path(main_path_)                                                           #获得主进程目录
-        data_path(data_path_)                                                           #获得数据目录
-        generate_number(generate_number_)                                               #获得要计算的目标参数点对应的ck_input.csv的行数
-        MadGraph_path('{}/../Externals/MadGraph'.format(self._main_path))               #获得MadGraph的目录
+        main_path(main_path_)                                                                       #获得主进程目录
+        data_path(data_path_)                                                                       #获得数据目录
+        generate_number(generate_number_)                                                           #获得要计算的目标参数点对应的ck_input.csv的行数
+        MadGraph_path(os.path.join(self._main_path, '../Externals/MadGraph/'))                      #获得MadGraph的目录
+        CheckMate_path(os.path.join(self._main_path, '../Externals/CheckMATE/CM_v2_26/'))           #获得CheckMate的目录
 
         @property
         def main_path(self) -> str:
@@ -142,7 +153,22 @@ class Monte_Carlo_simulation(object):
             if not isinstance(MadGraph_path_, str):
                 raise ValueError(bcolors.print_WARNING('MadGraph path must be a string!!!'))                # MadGraph目录必须是一个字符串
             self._MadGraph_path = MadGraph_path_
+        
+        @property
+        def CheckMate_path(self) -> str:
+            '''
+            获取CheckMate目录
+            '''
+            return self._CheckMate_path
 
+        @CheckMate_path.setter
+        def CheckMate_path(self, CheckMate_path_: str) -> None:
+            '''
+            设置CheckMate目录
+            '''
+            if not isinstance(CheckMate_path_, str):
+                raise ValueError(bcolors.print_WARNING('CheckMate path must be a string!!!'))                # CheckMate目录必须是一个字符串
+            self._CheckMate_path = CheckMate_path_
 
     def Support_MCsim(self) -> None:
         '''
@@ -151,14 +177,14 @@ class Monte_Carlo_simulation(object):
 
         def prepare_MadGraph(self) -> None:
             '''
-            准备MadGraph
+            准备MadGraph的param_card.dat输入文件以及proc_chi输入文件
             '''
-            pre_generate_path = self._main_path + '../Externals/ck/'     # 这是一个绝对路径，对prepare_MadGraph来说，所有的其他路径都是相对于这个路径的
+            pre_generate_path = os.path.join(self._main_path, '../Externals/ck/')      # 这是一个绝对路径，对prepare_MadGraph来说，所有的其他路径都是相对于这个路径的
             os.chdir(pre_generate_path)
-            os.system('rm -rf ../Madgraph/param_card.dat')               # 删除原有的param_card.dat文件
-            os.system('rm -rf ../Madgraph/proc_chi')                     # 删除原有的proc_chi文件
+            os.system('rm -rf ../Madgraph/param_card.dat')                              # 删除原有的param_card.dat文件
+            os.system('rm -rf ../Madgraph/proc_chi')                                    # 删除原有的proc_chi文件
             pre_generate(pre_generate_path)
-            os.chdir(self._main_path)                                    # 回到主目录
+            os.chdir(self._main_path)                                                   # 回到主目录
             
             def pre_generate(self, pre_generate_path: str) -> None:
                 '''
@@ -186,14 +212,13 @@ class Monte_Carlo_simulation(object):
                 if max(pow(data['N51'].iloc[self._generate_number-1], 2), pow(data['N52'].iloc[self._generate_number-1], 2), (pow(data['N53'].iloc[self._generate_number-1], 2) + pow(data['N54'].iloc[self._generate_number-1], 2)), pow(data['N55'].iloc[self._generate_number-1], 2)) == pow(data['N55'].iloc[self._generate_number-1], 2):
                     os.system("cp {}/../Madgraph/proc/proc_n5 {}/../Madgraph/proc_chi".format(pre_generate_path, pre_generate_path))
 
-
         def prepare_CheckMATE(self) -> None:
             '''
             修改自@张迪的代码，用于生成checkmate的输入文件，并获得其他checkmate的输入参数。
             其中一个重要的输入是截面数据，cs13chi_pb需要进行一系列判断再决定具体的数值。
-
+            最终所有输入数据都被写入ck_input.dat文件中，供下一步使用。
             '''
-            pre_ck_path = self._main_path + '../Externals/ck/'                                                              # 这是一个绝对路径，对prepare_CheckMATE来说，所有的其他路径都是相对于这个路径的
+            pre_ck_path = os.path.join(self._main_path, '../Externals/ck/')                                                 # 这是一个绝对路径，对prepare_CheckMATE来说，所有的其他路径都是相对于这个路径的
             os.chdir(pre_ck_path)
             os.system('rm -rf ck_input.dat')                                                                                # 删除旧的ck_input.dat文件
             Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb = ck_input(pre_ck_path)
@@ -223,7 +248,77 @@ class Monte_Carlo_simulation(object):
                     cs13chi_in = cs13chi_pb - (data['c1barn5_pb'].iloc[self._generate_number-1] + data['c1n5_pb'].iloc[self._generate_number-1] + data['c2barn5_pb'].iloc[self._generate_number-1] + data['c2n5_pb'].iloc[self._generate_number-1] + data['n5n5_pb'].iloc[self._generate_number-1] + data['n2n5_pb'].iloc[self._generate_number-1] + data['n3n5_pb'].iloc[self._generate_number-1] + data['n4n5_pb'].iloc[self._generate_number-1])
                 return Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb
 
+        def remove_old_CM_result(self) -> None:
+            '''
+            删除旧的CheckMate结果
+            '''
+            if os.path.exists(os.path.join(self._CheckMate_path, 'result/')):
+                shutil.rmtree(os.path.join(self._CheckMate_path, 'result/'))
+            else:
+                pass 
 
+        def after_ck_Execute(self) -> None:
+            '''
+            在单次进程所有的CheckMate程序运行完成后，进行一些结果收集操作
+            '''
+            after_ck_path = os.path.join(self._main_path, '../Externals/ck/')           # 存放ck结果的路径
+            os.chdir(after_ck_path)                                                     # 切换到ck结果存放路径
+            #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
+            folder_dir, robs, rexp, robscons, rexpcons = after_ck()
+            with open("{}/after_ck/ck_r.txt".format(after_ck_path), 'a') as ck_r:
+                ck_r.write("{}\t{}\t{}\t{}\n".format(robs, rexp, robscons, rexpcons))
+            os.chdir(self._main_path)
+
+            def after_ck(self) -> float:
+                '''
+                修改自@张迪的代码，用于Checkmate结果处理函数
+                详情咨询@张迪。
+                '''
+                after_ck_path = os.path.join(self._main_path, '../Externals/ck/')
+                os.chdir(after_ck_path)
+                data = pd.read_csv("{}/ck_input.csv".format(self._data_path))
+                Index = data['Index'].iloc[self._generate_number - 1]
+                folder_dir = "{}/after_ck/{}".format(after_ck_path, self._generate_number)
+                if not os.path.exists(folder_dir):
+                    os.makedirs(folder_dir)
+                chi_save = os.path.abspath("{}/../Madgraph/gnmssm_chi/Events/run_01/run_01_tag_1_banner.txt".format(after_ck_path))
+                os.system("cp {} {}/{}_chi.banner.txt".format(chi_save, folder_dir, Index))
+                smu_save = os.path.abspath("{}/../Madgraph/gnmssm_smusmu/Events/run_01/run_01_tag_1_banner.txt".format(after_ck_path))
+                os.system("cp {} {}/{}_smu.banner.txt".format(smu_save, folder_dir, Index))
+                ck_dir = os.path.abspath("{}/../CheckMATE/CM_v2_26/results/".format(after_ck_path))
+                os.system("cp -r {}/gnmssm {}/{}_ck".format(ck_dir, folder_dir, Index))
+                os.system("rm -rf {}/{}_ck/mg5amcatnlo/".format(folder_dir, Index))
+                def turn(datalist):
+                    return np.array(list(map(float, list(copy.copy(datalist)))))
+                def index_item(ite, itelis):
+                    return list(itelis).index(ite)
+                def loaddata(data):
+                    #analysis_ind = index_item("analysis", data[0, :])
+                    #sr_ind = index_item("sr", data[0, :])
+                    s_ind = index_item("s", data[0, :])
+                    #s95_ind = index_item("s95obs", data[0, :])
+                    s95obs_ind = index_item("s95obs", data[0, :])
+                    s95exp_ind = index_item("s95exp", data[0, :])
+                    #analysis = turn(data[1:, analysis_ind])
+                    #sr = turn(data[1:, sr_ind])
+                    s = turn(data[1:, s_ind])
+                    s95obs = turn(data[1:, s95obs_ind])
+                    s96exp = turn(data[1:, s95exp_ind])
+                    robscons_ind = index_item("robscons", data[0, :])
+                    robscons = turn(data[1:, robscons_ind])
+                    rexpcons_ind = index_item("rexpcons", data[0, :])
+                    rexpcons = turn(data[1:, rexpcons_ind])
+                    return s, s95obs, s96exp, s/s95obs, s/s96exp, robscons, rexpcons
+                if not os.path.exists("{}/gnmssm/evaluation/total_results.txt".format(ck_dir)):
+                    s=s95obs=s95exp=robs=rexp=robscons=rexpcons  = turn([-1,-3])
+                else:
+                    data_ck = np.loadtxt("{}/gnmssm/evaluation/total_results.txt".format(ck_dir), dtype=str)
+                    s, s95obs, s95exp, robs, rexp, robscons, rexpcons = loaddata(data_ck)
+                #data_ck_cms = np.loadtxt("{}/ck_cms/evaluation/total_results.txt".format(ck_dir), dtype=str)
+                #s_cms, s95obs_cms, s95exp_cms, robs_cms, rexp_cms, robscons_cms, rexpcons_cms = loaddata(data_ck_cms)
+                # os.system("rm -rf {}/*".format(ck_dir))
+                return folder_dir, max(robs), max(rexp), max(robscons), max(rexpcons)
+                
     def Get_MG5_info(self, mg5_name_: str, mg5_category_: str, mg5_run_card_: str) -> None:
         '''
         在执行MadGraph程序之前，首先要获得必要的信息。
@@ -286,10 +381,7 @@ class Monte_Carlo_simulation(object):
                 raise ValueError(bcolors.print_WARNING('Mg5 run card path must be a string!!!'))                # 判断mg5_run_card是否为字符串
             self._mg5_run_card = mg5_run_card_
 
-        def pass_():
-            pass
-
-    def mg5_Execution(self) -> None:
+    def mg5_Execute(self) -> None:
         '''
         启动MadGraph程序，并获取结果。
         '''
@@ -303,10 +395,115 @@ class Monte_Carlo_simulation(object):
         os.system('cp {1} {0}/Cards/run_card.dat'.format(self._mg5_name, self._mg5_run_card))                               # 将mg5_run_card.dat复制到mg5_name/Cards/下。
         os.system('cp madevent_interface.py {0}/bin/internal/'.format(self._mg5_name))                                      # 将madevent_interface.py复制到mg5_name/bin/internal/下。该文件为提前生成的文件，初始位置放在MadGraph_path下。
         os.system('./{0}/bin/generate_events -f'.format(self._mg5_name))                                                    # 启动MadGraph中生成事例的程序，产生“事例”文件夹，对应于mg5中的launch命令。这也是单个MadGraph程序的最后一步。输出结果保存在mg5_name/Events/run_01/下。
+        os.chdir(self._main_path)                                                                                           # 返回主目录。
 
+    def Get_CheckMATE_info(self, CM_input_name_, XSect_name_, XSect_replace_) -> None:
+        '''
+        在执行CheckMATE程序之前，首先要获得必要的信息。
+        CM_input_name：CheckMATE输入文件的名字。通常放置于CheckMATE_path/bin/下。
+        XSect_name：
+        '''
+        CM_input_name(CM_input_name_)                                                                                       # 获取CheckMATE输入文件名。
+        XSect_name(XSect_name_)                                                                                             # 获取XSect输入文件名。
+        XSect_replace(XSect_replace_)                                                                                       # 获取XSect替换字典。
 
-    def CheckMATE_info(self) -> None:
-        pass
+        @property 
+        def CM_input_name(self):
+            '''
+            获取CM_input_name。
+            '''
+            return self._CM_input_name
         
+        @CM_input_name.setter
+        def CM_input_name(self, CM_input_name_: str):
+            '''
+            设置CM_input_name。
+            '''
+            if not isinstance(CM_input_name_, str):
+                raise ValueError(bcolors.print_WARNING('CM input name must be a string!!!'))                            # 判断CM_input_name是否为字符串
+            self._CM_input_name = CM_input_name_
 
+        @property
+        def XSect_name(self):
+            '''
+            获取XSect_name。
+            '''
+            return self._XSect_name
+
+        @XSect_name.setter
+        def XSect_name(self, XSect_name_: str):
+            '''
+            设置XSect_name。
+            '''
+            if not isinstance(XSect_name_, str):
+                raise ValueError(bcolors.print_WARNING('XSect name must be a string!!!'))                                # 判断XSect_name是否为字符串
+            self._XSect_name = XSect_name_
+
+        @property
+        def XSect_replace(self):
+            '''
+            获取XSect_replace。
+            '''
+            return self._XSect_replace
+
+        @XSect_replace.setter
+        def XSect_replace(self, XSect_replace_: str):
+            '''
+            设置XSect_replace。
+            '''
+            if not isinstance(XSect_replace_, str):
+                raise ValueError(bcolors.print_WARNING('XSect replace must be a string!!!'))                              # 判断XSect_replace是否为字符串
+            self._XSect_replace = XSect_replace_
+
+    def CM_Execute(self) -> None:
+        '''
+        执行CheckMATE程序。
+        '''
+        get_XSect_number()                                                                                                 # 从ck_input.dat中获取XSect。
+        replace_Xsect()                                                                                                    # 替换CheckMATE输入文件中的XSect。
+        os.chdir(self._CheckMate_path)                                              # 切换到CheckMATE_path目录下。
+        os.system('./bin/checkmate bin/{}'.format(self._CM_input_name))             # 执行CheckMATE程序。
+        os.chdir(self._main_path)                                                   # 返回主目录。
+        restore_CM_inputfile()                                                      # 恢复CheckMATE输入文件。
+
+        def get_XSect_number(self) -> None:
+            '''
+            读取/Externals/ck/ck_input.dat中的XSect信息,获取截面信息。
+            '''
+            ck_input_path = (self._main_path, '../Externals/ck/ck_input.dat')               # 获取ck_input.dat的路径。
+            ck_input_df = pd.read_csv(ck_input_path, sep='\s+', dtype=str)                  # 读取ck_input.dat文件。
+            self._XSect_number = ck_input_df.loc[0, self._Xsect_name]                             # 获取Xsect的值。
+
+        def replace_Xsect(self) -> None:
+            '''
+            进入到CheckMATE_path/bin/下，对CM_input_name文件中截面位置的关键字进行替换操作，并且生成一个备份文件在计算完毕后再还原回来。
+            '''
+            CM_inputfile_path = (self._CheckMate_path, './bin')     # 获取CheckMATE输入文件的路径。
+            os.chdir(CM_inputfile_path)                             # 切换到CheckMATE输入文件的路径下。
+            backup_file = self._CM_input_name + '.bak'              # 创建一个备份文件。
+            temp_file = self._CM_input_name + '.tmp'                # 创建一个临时文件。
+            if not os.path.exists(backup_file):
+                shutil.copy2(self._CM_input_name, backup_file)                                                                 # 创建备份文件。
+                with open(self._CM_input_name, mode = 'r') as fr, open(temp_file, mode = 'w') as fw:
+                    for line in fr:
+                        fw.write(line.replace(self._XSect_replace, self._XSect_number))                                        # 替换截面位置的关键字。
+                os.remove(self._CM_input_name)                                                                                 # 删除原文件。
+                os.rename(temp_file, self._CM_input_name)                                                                      # 重命名临时文件。
+                os.chdir(self._main_path)                                                                                      # 返回主目录。
+
+        def restore_CM_inputfile(self) -> None:
+            '''
+            进入到CheckMATE_path/bin/下，还原CheckMATE输入文件。
+            '''
+            CM_inputfile_path = (self._CheckMate_path, './bin')     # 获取CheckMATE输入文件的路径。
+            os.chdir(CM_inputfile_path)                             # 切换到CheckMATE输入文件的路径下。
+            backup_file = self._CM_input_name + '.bak'              # 告知备份文件名。
+            os.remove(self._CM_input_name)                          # 删除原文件。
+            os.rename(backup_file, self._CM_input_name)             # 重命名备份文件。
+            os.chdir(self._main_path)                               # 返回主目录。
+
+
+if __name__ == '__main__':
+    #测试一个进程
+    pass
     
