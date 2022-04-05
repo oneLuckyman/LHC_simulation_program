@@ -18,7 +18,7 @@ import copy
         2022年4月1日：本程序开始编写。构造了字体和颜色库，构造了Monte_Carlo_simulation类以及其中的（进程的初始化，获得主进程目录，获得数据目录）
         2022年4月2日：构造了Monte_Carlo_simulation类中，generate_number的内容。将项目上传至GitHub。
         2022年4月3日：构造进程准备类，补完generate_number函数。
-        2022年4月4日：开始使用Copilot辅助。构造MCsim准备类   需要补
+        2022年4月4日：开始使用Copilot辅助。构造了Support_MCsim方法，mg5_Execution方法，Get_MG5_info方法。
 '''
 
 class bcolors(object):
