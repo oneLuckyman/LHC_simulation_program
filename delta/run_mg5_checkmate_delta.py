@@ -63,7 +63,7 @@ class Prepare_program(object):
 
     def refresh_ck_r(self) -> None:
         '''
-        刷新ck_r.txt文件。ck_r.txt是存放结果的文件，每次运行程序时，都会将ck_r.txt清空，然后将结果写入ck_r.txt。
+        刷新ck_r.txt文件。ck_r.txt是存放CheckMATE结果的文件，每次运行程序时，都会将ck_r.txt清空，然后将结果写入ck_r.txt。
         '''
         after_ck_path = os.path.join(self._main_path, '../Externals/ck/')           # 存放ck结果的路径
         os.chdir(after_ck_path)                                                     # 切换到ck结果存放路径
