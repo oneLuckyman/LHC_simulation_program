@@ -70,7 +70,7 @@ class Prepare_program(object):
         os.system('rm -rf after_ck/ck_r.txt')                                       # 删除旧的ck结果文件
         #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
         with open(os.path.join(after_ck_path, 'after_ck/ck_r.txt'), 'w') as ck_r:
-            ck_r.write("Index\tr_smodels\tcs13chi_in\tcs13smu_pb\tcs13chi_pb\n")
+            ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
 
 
 
