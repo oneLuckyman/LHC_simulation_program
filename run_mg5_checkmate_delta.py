@@ -22,6 +22,7 @@ import copy
         2022年4月4日：开始使用Copilot辅助。构造了Support_MCsim方法，mg5_Execution方法，Get_MG5_info方法。
         2022年4月5日：构造了Get_CheckMATE_info方法，构造了CM_Execution方法，构造了Support_MCsim中的remove_old_CM_result和after_ck_Execute方法，构造了Prepare_program中的update_ck_r方法。
         2022年4月6日：修改关于property的BUG，以及有些函数少传入了self参数，现在添加上了。此外有些语句和函数定义的顺序进行了调整。
+        至此，本程序基本开发完毕，即将迭代更新。下一个版本将会把程序调整成三个大类，采用更加完善的数据结构和方法设计，以及更加简洁易懂的代码。
 '''
 
 class bcolors(object):
@@ -259,8 +260,8 @@ class Monte_Carlo_simulation(object):
         '''
         删除旧的CheckMate结果
         '''
-        if os.path.exists(os.path.join(self._CheckMate_path, 'result/')):
-            shutil.rmtree(os.path.join(self._CheckMate_path, 'result/'))
+        if os.path.exists(os.path.join(self._CheckMate_path, 'results/')):
+            shutil.rmtree(os.path.join(self._CheckMate_path, 'results/'))
         else:
             pass 
 
