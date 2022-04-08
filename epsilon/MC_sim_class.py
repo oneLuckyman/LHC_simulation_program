@@ -138,25 +138,8 @@ class Monte_Carlo_simulation(object):
             raise ValueError(bcolors.print_WARNING('Support path must be a string!!!'))                # Support目录必须是一个字符串
         self._Support_path = Support_path_
 
-    def refresh_ck_r(self) -> None:
-        '''
-        刷新ck_r.txt文件。ck_r.txt是存放CheckMATE结果的文件，每次运行程序时，都会将ck_r.txt清空，然后将结果写入ck_r.txt。
-        '''
-        after_ck_path = os.path.join(self._main_path, '../Externals/ck/')           # 存放ck结果的路径
-        os.chdir(after_ck_path)                                                     # 切换到ck结果存放路径
-        os.system('rm -rf after_ck/ck_r.txt')                                       # 删除旧的ck结果文件
-        #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
-        with open(os.path.join(after_ck_path, 'after_ck/ck_r.txt'), 'w') as ck_r:
-            ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
 
-    def remove_old_CM_result(self) -> None:
-        '''
-        删除旧的CheckMate结果
-        '''
-        if os.path.exists(os.path.join(self._CheckMate_path, 'results/')):
-            shutil.rmtree(os.path.join(self._CheckMate_path, 'results/'))
-        else:
-            pass 
+
 
 
 
@@ -164,5 +147,3 @@ class Monte_Carlo_simulation(object):
 
 if __name__ == '__main__':
     MC_sim = Monte_Carlo_simulation('/home/jxl/Desktop/program_test/collider_sim/Test/gnmssm')
-    MC_sim.refresh_ck_r()
-    MC_sim.remove_old_CM_result()
