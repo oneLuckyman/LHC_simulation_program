@@ -26,6 +26,7 @@ from MC_sim_class import bcolors
 @开发日志：
         2022年4月6日：开始编写MC_sim_class.py
         2022年4月7日：MC_sim_class.py编写完毕，开始编写Prepare_program类，Prepare_subprocess类，MadGraph类
+        2022年4月8日：编写了CheckMATE类，补全了Prepare_program类和Prepare_subprocess类中的一些方法
 '''
 
 class Prepare_program(object):
