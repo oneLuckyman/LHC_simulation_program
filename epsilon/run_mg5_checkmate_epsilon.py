@@ -27,6 +27,7 @@ from MC_sim_class import bcolors
         2022年4月6日：开始编写MC_sim_class.py
         2022年4月7日：MC_sim_class.py编写完毕，开始编写Prepare_program类，Prepare_subprocess类，MadGraph类
         2022年4月8日：编写了CheckMATE类，补全了Prepare_program类和Prepare_subprocess类中的一些方法
+        2022年4月9日：编写了用于收集结果的函数。
 '''
 
 class Prepare_program(object):
@@ -35,7 +36,13 @@ class Prepare_program(object):
     这个类中的方法只会在单个模拟进程开始前调用一次，一旦generate_numbers固定后这个类不会再发生改变，属于第二大类。
     '''
     def __init__(self) -> None:
-        self._main_path = sys.path[0]
+        self._main_path = MC_sim._main_path                                                                     #获得主目录
+        self._data_path = MC_sim._data_path_                                                                    #获得数据目录
+        self._MadGraph_path = MC_sim.MadGraph_path                                                              #获得MadGraph的目录
+        self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
+        self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
+        self._result_path = MC_sim._result_path                                                                 #获得结果目录
+        self._info_name_list = MC_sim._info_name_list_                                                          #获得信息名称列表
         
 
     def get_generate_numbers_from_ck_ini(self) -> list:
@@ -55,15 +62,33 @@ class Prepare_program(object):
         '''
         刷新ck_r.txt文件。ck_r.txt是存放CheckMATE结果的文件，每次运行程序时，都会将ck_r.txt清空，然后将结果写入ck_r.txt。
         '''
-        after_ck_path = os.path.join(self._main_path, '../Externals/ck/')           # 存放ck结果的路径
-        os.chdir(after_ck_path)                                                     # 切换到ck结果存放路径
+        os.chdir(self._Support_path)                                                     # 切换到ck结果存放路径
         os.system('rm -rf after_ck/ck_r.txt')                                       # 删除旧的ck结果文件
         #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
-        with open(os.path.join(after_ck_path, 'after_ck/ck_r.txt'), 'w') as ck_r:
+        with open(os.path.join(self._Support_path, 'after_ck/ck_r.txt'), 'w') as ck_r:
             ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
     
-    def collect_results(self) -> None:
-        pass
+    def write_list_to_file(list,file) -> None:
+        '''
+        把一个列表的信息写入文件的第一行
+        '''
+        with open(file,'w') as f:
+            for i in list:
+                f.write(str(i)+'\t')
+            f.write('\n')
+    
+    def refresh_results_file(self) -> None:
+        '''
+        刷新GridData.txt文件。这里存放着最终需要的所有数据。
+        '''
+        os.chdir(self._result_path)                                                             # 切换到结果存放路径
+        os.system('rm -rf GridData.txt')                                                        # 删除旧的结果文件
+        all_info_name = self._info_name_list + ["robs", "rexp", "robscons", "rexpcons"]         # 将所有信息名称和ck结果名称添加到一个列表中
+        self.write_list_to_file(all_info_name,'GridData.txt')                                   # 将信息名称写入结果文件
+        os.chdir(self._main_path)                                                               # 切换到主目录
+
+    
+
 
 class Prepare_subprocess(object):
     '''
@@ -76,6 +101,8 @@ class Prepare_subprocess(object):
         self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
         self._generate_number = generate_number_                                                                #获得要计算的目标参数点
+        self._result_path = MC_sim._result_path                                                                 #获得结果目录
+        self._info_name_list = MC_sim._info_name_list_                                                          #获得信息名称列表
 
     def prepare_MadGraph(self) -> None:
         '''
@@ -217,16 +244,26 @@ class Prepare_subprocess(object):
             ck_r.write("{}\t{}\t{}\t{}\n".format(self.robs, self.rexp, self.robscons, self.rexpcons))
         os.chdir(self._main_path)
     
-    def collect_result(self) -> None:
+    def collect_result(self, info_name_list_) -> None:
         '''
         收集单个参数点所有必要的数据
         '''
-        data = pd.read_csv("{}/ck_input.csv".format(self._data_path))
-        info_names = ['Index']
-        info = list(data[info_names].iloc[self._generate_number - 1])
-        #
-    
-
+        def write_list_to_file(list,file) -> None:
+            '''
+            把一个列表的信息写入文件的末尾一行
+            '''
+            with open(file,'a') as f:
+                for i in list:
+                    f.write(str(i)+'\t')
+                f.write('\n')
+        
+        os.chdir(self._result_path)                                                             # 切换到结果存放路径
+        data_df = pd.read_csv("{}/ck_input.csv".format(self._data_path))                        # 读取ck_input.csv文件
+        info_list = list(data_df[info_name_list_].iloc[self._generate_number - 1])              # 获取该参数点的信息
+        result_list = info_list + [self.robs, self.rexp, self.robscons, self.rexpcons]          # 将该参数点的信息和ck结果添加到result_list
+        write_list_to_file(result_list, 'GridData.txt')                                         # 将result_list写入GridData.txt文件
+        os.chdir(self._main_path)                                                               # 切换到主路径
+        
 class MadGraph(object):
     '''
     MadGraph类，获取单个MadGraph进程的信息，并调用MadGraph进程。
