@@ -194,7 +194,7 @@ class Prepare_subprocess(object):
             os.chdir(self._Support_path)
             data = pd.read_csv("{}/ck_input.csv".format(self._data_path))
             Index = data['Index'].iloc[self._generate_number - 1]
-            folder_dir = os.path.join(self._Support_path, 'after_ck/', self.generate_number)
+            folder_dir = os.path.join(self._Support_path, 'after_ck/', str(self._generate_number))
             if not os.path.exists(folder_dir):
                 os.makedirs(folder_dir)
             chi_save = os.path.abspath("{}/../Madgraph/gnmssm_chi/Events/run_01/run_01_tag_1_banner.txt".format(self._Support_path))
