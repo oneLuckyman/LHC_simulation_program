@@ -10,6 +10,7 @@ import pandas as pd
 import shutil 
 import numpy as np 
 import copy 
+os.sys.path.append(os.path.join(sys.path[0], 'MC_sim_class'))
 from MC_sim_class import MC_sim
 from MC_sim_class import bcolors
 
@@ -24,10 +25,11 @@ from MC_sim_class import bcolors
                 这一种类型下还包括一种子类型，MadGraph类和CheckMATE类，这种子进程类可能会在第三种类型中多次调用，但每次实例化的过程相同。
             本文件包含第二种和第三种类型。
 @开发日志：
-        2022年4月6日：开始编写MC_sim_class.py
-        2022年4月7日：MC_sim_class.py编写完毕，开始编写Prepare_program类，Prepare_subprocess类，MadGraph类
-        2022年4月8日：编写了CheckMATE类，补全了Prepare_program类和Prepare_subprocess类中的一些方法
+        2022年4月6日：开始编写MC_sim_class.py。
+        2022年4月7日：MC_sim_class.py编写完毕，开始编写Prepare_program类，Prepare_subprocess类，MadGraph类。
+        2022年4月8日：编写了CheckMATE类，补全了Prepare_program类和Prepare_subprocess类中的一些方法。
         2022年4月9日：编写了用于收集结果的函数。
+        2022年4月10日：修改了一些关于路径名字和import时没有添加sys.path的问题。
 '''
 
 class Prepare_program(object):
@@ -37,14 +39,13 @@ class Prepare_program(object):
     '''
     def __init__(self) -> None:
         self._main_path = MC_sim._main_path                                                                     #获得主目录
-        self._data_path = MC_sim._data_path_                                                                    #获得数据目录
+        self._data_path = MC_sim._data_path                                                                    #获得数据目录
         self._MadGraph_path = MC_sim.MadGraph_path                                                              #获得MadGraph的目录
         self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
         self._result_path = MC_sim._result_path                                                                 #获得结果目录
-        self._info_name_list = MC_sim._info_name_list_                                                          #获得信息名称列表
+        self._info_name_list = MC_sim._info_name_list                                                           #获得信息名称列表
         
-
     def get_generate_numbers_from_ck_ini(self) -> list:
         '''
         输入一个ck.ini文件，并获取本次进程所需的所有generate_numbers。
@@ -68,7 +69,7 @@ class Prepare_program(object):
         with open(os.path.join(self._Support_path, 'after_ck/ck_r.txt'), 'w') as ck_r:
             ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
     
-    def write_list_to_file(list,file) -> None:
+    def write_list_to_file(self, list, file) -> None:
         '''
         把一个列表的信息写入文件的第一行
         '''
@@ -86,23 +87,20 @@ class Prepare_program(object):
         all_info_name = self._info_name_list + ["robs", "rexp", "robscons", "rexpcons"]         # 将所有信息名称和ck结果名称添加到一个列表中
         self.write_list_to_file(all_info_name,'GridData.txt')                                   # 将信息名称写入结果文件
         os.chdir(self._main_path)                                                               # 切换到主目录
-
-    
-
-
+ 
 class Prepare_subprocess(object):
     '''
     用于准备和收尾各个子进程的类，通常generate_number确定后，这个类中的方法在指定位置只会调用一次，因此属于第三大类
     '''
-    def __init__(self, generate_number_) -> None:
+    def __init__(self, generate_number_: int) -> None:
         self._main_path = MC_sim._main_path                                                                     #获得主目录
-        self._data_path = MC_sim._data_path_                                                                    #获得数据目录
+        self._data_path = MC_sim._data_path                                                                    #获得数据目录
         self._MadGraph_path = MC_sim.MadGraph_path                                                              #获得MadGraph的目录
         self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
         self._generate_number = generate_number_                                                                #获得要计算的目标参数点
         self._result_path = MC_sim._result_path                                                                 #获得结果目录
-        self._info_name_list = MC_sim._info_name_list_                                                          #获得信息名称列表
+        self._info_name_list = MC_sim._info_name_list                                                           #获得信息名称列表
 
     def prepare_MadGraph(self) -> None:
         '''
@@ -244,7 +242,7 @@ class Prepare_subprocess(object):
             ck_r.write("{}\t{}\t{}\t{}\n".format(self.robs, self.rexp, self.robscons, self.rexpcons))
         os.chdir(self._main_path)
     
-    def collect_result(self, info_name_list_) -> None:
+    def collect_result(self) -> None:
         '''
         收集单个参数点所有必要的数据
         '''
@@ -259,7 +257,7 @@ class Prepare_subprocess(object):
         
         os.chdir(self._result_path)                                                             # 切换到结果存放路径
         data_df = pd.read_csv("{}/ck_input.csv".format(self._data_path))                        # 读取ck_input.csv文件
-        info_list = list(data_df[info_name_list_].iloc[self._generate_number - 1])              # 获取该参数点的信息
+        info_list = list(data_df[self._info_name_list].iloc[self._generate_number - 1])              # 获取该参数点的信息
         result_list = info_list + [self.robs, self.rexp, self.robscons, self.rexpcons]          # 将该参数点的信息和ck结果添加到result_list
         write_list_to_file(result_list, 'GridData.txt')                                         # 将result_list写入GridData.txt文件
         os.chdir(self._main_path)                                                               # 切换到主路径
@@ -268,18 +266,17 @@ class MadGraph(object):
     '''
     MadGraph类，获取单个MadGraph进程的信息，并调用MadGraph进程。
     '''
-    def __init__(self, generate_number_, mg5_name_: str, mg5_category_: str, mg5_run_card_: str) -> None:
+    def __init__(self, mg5_name_: str, mg5_category_: str, mg5_run_card_: str) -> None:
         '''
         mg5_name: 要执行的MadGraph程序的名字，如：'gnmssm_chi'，来源于proc_chi的最后一行output gnmssm_chi，放置在../Externals/Madgrapg/下。
         mg5_category: 要执行的MadGraph程序的类别，目前为止有两种类别，'EW'(electroweakinos)和'SL'(sleptons)。
         mg5_run_card: 要执行的MadGraph程序的run_card.dat的名字，如：'run_chi.dat'，放置在../Externals/Madgrapg/下。  
         '''
         self._main_path = MC_sim._main_path                                                                     #获得主目录
-        self._data_path = MC_sim._data_path_                                                                    #获得数据目录
+        self._data_path = MC_sim._data_path                                                                    #获得数据目录
         self._MadGraph_path = MC_sim.MadGraph_path                                                              #获得MadGraph的目录
         self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
-        self._generate_number = generate_number_
         self._mg5_name = mg5_name_
         self._mg5_category = mg5_category_
         self._mg5_run_card = mg5_run_card_
@@ -358,13 +355,12 @@ class CheckMATE(object):
     '''
     CheckMATE类，获取单个CheckMATE进程的信息，并调用CheckMATE进程。
     '''
-    def __init__(self, generate_number_, CM_input_name_, XSect_name_, XSect_replace_) -> None:
+    def __init__(self, CM_input_name_, XSect_name_, XSect_replace_) -> None:
         self._main_path = MC_sim._main_path                                                                     #获得主目录
-        self._data_path = MC_sim._data_path_                                                                    #获得数据目录
+        self._data_path = MC_sim._data_path                                                                    #获得数据目录
         self._MadGraph_path = MC_sim.MadGraph_path                                                              #获得MadGraph的目录
         self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
-        self._generate_number = generate_number_
         self._CM_input_name = CM_input_name_                                                                    # 获取CheckMATE输入文件名。
         self._XSect_name = XSect_name_                                                                          # 获取XSect输入文件名。
         self._XSect_replace = XSect_replace_                                                                    # 获取XSect替换字典。
