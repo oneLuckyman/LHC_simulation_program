@@ -257,7 +257,7 @@ class Prepare_subprocess(object):
         
         os.chdir(self._result_path)                                                             # 切换到结果存放路径
         data_df = pd.read_csv("{}/ck_input.csv".format(self._data_path))                        # 读取ck_input.csv文件
-        info_list = list(data_df[self._info_name_list].iloc[self._generate_number - 1])              # 获取该参数点的信息
+        info_list = list(data_df[self._info_name_list].iloc[self._generate_number - 1])         # 获取该参数点的信息
         result_list = info_list + [self.robs, self.rexp, self.robscons, self.rexpcons]          # 将该参数点的信息和ck结果添加到result_list
         write_list_to_file(result_list, 'GridData.txt')                                         # 将result_list写入GridData.txt文件
         os.chdir(self._main_path)                                                               # 切换到主路径
