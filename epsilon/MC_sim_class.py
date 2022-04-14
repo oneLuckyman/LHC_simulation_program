@@ -58,6 +58,7 @@ class Monte_Carlo_simulation(object):
         self._MadGraph_path = os.path.join(self._main_path, '../Externals/Madgraph/')                      #获得MadGraph的目录
         self._CheckMate_path = os.path.join(self._main_path, '../Externals/CheckMATE/CM_v2_26/')           #获得CheckMate的目录
         self._Support_path = os.path.join(self._main_path, '../Externals/ck/')                             #获得ck的目录
+        #这里有问题，明天来改，ck_1可能是不存在的
         self._result_path = os.path.join(self._main_path, 'ck_1/')                                         #获得结果目录
         self._info_name_list = info_name_list_                                                             #获得信息名称列表
         self._model_name = model_name_.upper()                                                             #获得模型名称
