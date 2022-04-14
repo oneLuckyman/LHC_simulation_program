@@ -47,7 +47,7 @@ class Monte_Carlo_simulation(object):
     这是单个蒙特卡洛模拟进程的主类，所有必要的属性和方法都存在这里。
     每当一个Monte_Carlo_simulation类被实例化时，即可视为一次蒙特卡洛模拟进程开始了。
     '''
-    def __init__(self, data_path_: str, info_name_list_: list, main_path_: str = sys.path[0]) -> None:
+    def __init__(self, data_path_: str, model_name_, info_name_list_: list, main_path_: str = sys.path[0]) -> None:
         '''
         进程的初始化，获得: 主进程目录，数据目录，generate_number， MadGraph目录
         数据目录包含了Spectrums文件夹，以及ck_input.csv文件。ck_input.csv文件中包含了所有要计算的参数点信息。
@@ -59,6 +59,7 @@ class Monte_Carlo_simulation(object):
         self._Support_path = os.path.join(self._main_path, '../Externals/ck/')                             #获得ck的目录
         self._result_path = os.path.join(self._main_path, 'ck_1/')                                         #获得结果目录
         self._info_name_list = info_name_list_                                                             #获得信息名称列表
+        self._model_name = model_name_.upper()                                                             #获得模型名称
 
     @property
     def main_path(self) -> str:
@@ -140,7 +141,21 @@ class Monte_Carlo_simulation(object):
             raise ValueError(bcolors.print_WARNING('Support path must be a string!!!'))                # Support目录必须是一个字符串
         self._Support_path = Support_path_
 
-
+    @property
+    def model_name(self) -> str:
+        '''
+        获取模型名称
+        '''
+        return self._model_name
+    
+    @model_name.setter
+    def model_name(self, model_name_: str) -> None:
+        '''
+        设置模型名称
+        '''
+        if not isinstance(model_name_, str):
+            raise ValueError(bcolors.print_WARNING('Model name must be a string!!!'))                    # 模型名称必须是一个字符串
+        self._model_name = model_name_.upper()
 
 
 
@@ -149,7 +164,7 @@ class Monte_Carlo_simulation(object):
 
 if __name__ != '__main__':
     info_name_list = ['Index']
-    MC_sim = Monte_Carlo_simulation('/home/jxl/Desktop/program_test/collider_sim/Test/gnmssm', info_name_list)
+    MC_sim = Monte_Carlo_simulation('/home/jxl/Desktop/program_test/collider_sim/Test/gnmssm', 'nmssm', info_name_list)
 
 if __name__ == '__main__':
     print('Do not run this file directly!!')

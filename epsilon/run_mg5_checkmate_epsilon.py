@@ -45,6 +45,7 @@ class Prepare_program(object):
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
         self._result_path = MC_sim._result_path                                                                 #获得结果目录
         self._info_name_list = MC_sim._info_name_list                                                           #获得信息名称列表
+        self._model_name = MC_sim._model_name                                                                   #获得模型名称
         
     def get_generate_numbers_from_ck_ini(self) -> list:
         '''
@@ -101,6 +102,7 @@ class Prepare_subprocess(object):
         self._generate_number = generate_number_                                                                #获得要计算的目标参数点
         self._result_path = MC_sim._result_path                                                                 #获得结果目录
         self._info_name_list = MC_sim._info_name_list                                                           #获得信息名称列表
+        self._model_name = MC_sim._model_name                                                                   #获得模型名称
 
     def prepare_MadGraph(self) -> None:
         '''
@@ -119,18 +121,20 @@ class Prepare_subprocess(object):
                 with open("{}/../Madgraph/param_card.dat".format(self._Support_path), 'w') as f2:                    # 写入param_card.dat文件
                     f2.write(f1.read())
 
-
             ## 注意 !!!!  以下代码用于获得proc_chi文件，在未来的工作中判断条件有可能会被更改。  !!!!
-            if max(pow(data['N11'].iloc[self._generate_number-1], 2), pow(data['N12'].iloc[self._generate_number-1], 2), (pow(data['N13'].iloc[self._generate_number-1], 2) + pow(data['N14'].iloc[self._generate_number-1], 2)), pow(data['N15'].iloc[self._generate_number-1], 2)) == pow(data['N15'].iloc[self._generate_number-1], 2):  
-                os.system("cp {}/../Madgraph/proc/proc_n1 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
-            if max(pow(data['N21'].iloc[self._generate_number-1], 2), pow(data['N22'].iloc[self._generate_number-1], 2), (pow(data['N23'].iloc[self._generate_number-1], 2) + pow(data['N24'].iloc[self._generate_number-1], 2)), pow(data['N25'].iloc[self._generate_number-1], 2)) == pow(data['N25'].iloc[self._generate_number-1], 2):
-                os.system("cp {}/../Madgraph/proc/proc_n2 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
-            if max(pow(data['N31'].iloc[self._generate_number-1], 2), pow(data['N32'].iloc[self._generate_number-1], 2), (pow(data['N33'].iloc[self._generate_number-1], 2) + pow(data['N34'].iloc[self._generate_number-1], 2)), pow(data['N35'].iloc[self._generate_number-1], 2)) == pow(data['N35'].iloc[self._generate_number-1], 2):
-                os.system("cp {}/../Madgraph/proc/proc_n3 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
-            if max(pow(data['N41'].iloc[self._generate_number-1], 2), pow(data['N42'].iloc[self._generate_number-1], 2), (pow(data['N43'].iloc[self._generate_number-1], 2) + pow(data['N44'].iloc[self._generate_number-1], 2)), pow(data['N45'].iloc[self._generate_number-1], 2)) == pow(data['N45'].iloc[self._generate_number-1], 2):
-                os.system("cp {}/../Madgraph/proc/proc_n4 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
-            if max(pow(data['N51'].iloc[self._generate_number-1], 2), pow(data['N52'].iloc[self._generate_number-1], 2), (pow(data['N53'].iloc[self._generate_number-1], 2) + pow(data['N54'].iloc[self._generate_number-1], 2)), pow(data['N55'].iloc[self._generate_number-1], 2)) == pow(data['N55'].iloc[self._generate_number-1], 2):
-                os.system("cp {}/../Madgraph/proc/proc_n5 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+            if self._model_name == 'MSSM':
+                os.system("cp {}/../Madgraph/proc/proc_mssm {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+            elif self._model_name == 'NMSSM':
+                if max(pow(data['N11'].iloc[self._generate_number-1], 2), pow(data['N12'].iloc[self._generate_number-1], 2), (pow(data['N13'].iloc[self._generate_number-1], 2) + pow(data['N14'].iloc[self._generate_number-1], 2)), pow(data['N15'].iloc[self._generate_number-1], 2)) == pow(data['N15'].iloc[self._generate_number-1], 2):  
+                    os.system("cp {}/../Madgraph/proc/proc_n1 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N21'].iloc[self._generate_number-1], 2), pow(data['N22'].iloc[self._generate_number-1], 2), (pow(data['N23'].iloc[self._generate_number-1], 2) + pow(data['N24'].iloc[self._generate_number-1], 2)), pow(data['N25'].iloc[self._generate_number-1], 2)) == pow(data['N25'].iloc[self._generate_number-1], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n2 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N31'].iloc[self._generate_number-1], 2), pow(data['N32'].iloc[self._generate_number-1], 2), (pow(data['N33'].iloc[self._generate_number-1], 2) + pow(data['N34'].iloc[self._generate_number-1], 2)), pow(data['N35'].iloc[self._generate_number-1], 2)) == pow(data['N35'].iloc[self._generate_number-1], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n3 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N41'].iloc[self._generate_number-1], 2), pow(data['N42'].iloc[self._generate_number-1], 2), (pow(data['N43'].iloc[self._generate_number-1], 2) + pow(data['N44'].iloc[self._generate_number-1], 2)), pow(data['N45'].iloc[self._generate_number-1], 2)) == pow(data['N45'].iloc[self._generate_number-1], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n4 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N51'].iloc[self._generate_number-1], 2), pow(data['N52'].iloc[self._generate_number-1], 2), (pow(data['N53'].iloc[self._generate_number-1], 2) + pow(data['N54'].iloc[self._generate_number-1], 2)), pow(data['N55'].iloc[self._generate_number-1], 2)) == pow(data['N55'].iloc[self._generate_number-1], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n5 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
 
         os.chdir(self._Support_path)
         os.system('rm -rf ../Madgraph/param_card.dat')                              # 删除原有的param_card.dat文件
@@ -153,16 +157,19 @@ class Prepare_subprocess(object):
             r_smodels = data['r_smodels'].iloc[self._generate_number-1]                                             # 获取Spectrum的r_smodels
             cs13chi_pb = data['cs13chi_pb'].iloc[self._generate_number-1]                                           # 获取Spectrum的cs13chi_pb，该数字是EW的产生截面数据。在作为checkmate输入数值之前，该截面还需要进一步计算。
             cs13smu_in = data['cs13smu_pb'].iloc[self._generate_number-1]                                           # 获取Spectrum的cs13smu_pb，该数字是SM的产生截面数据，是checkmate的重要输入数值。
-            if max(pow(data['N11'].iloc[self._generate_number-1], 2), pow(data['N12'].iloc[self._generate_number-1], 2), (pow(data['N13'].iloc[self._generate_number-1], 2) + pow(data['N14'].iloc[self._generate_number-1], 2)), pow(data['N15'].iloc[self._generate_number-1], 2)) == pow(data['N15'].iloc[self._generate_number-1], 2):
+            if self._model_name == 'MSSM':
                 cs13chi_in = cs13chi_pb
-            if max(pow(data['N21'].iloc[self._generate_number-1], 2), pow(data['N22'].iloc[self._generate_number-1], 2), (pow(data['N23'].iloc[self._generate_number-1], 2) + pow(data['N24'].iloc[self._generate_number-1], 2)), pow(data['N25'].iloc[self._generate_number-1], 2)) == pow(data['N25'].iloc[self._generate_number-1], 2):
-                cs13chi_in = cs13chi_pb - (data['c1barn2_pb'].iloc[self._generate_number-1] + data['c1n2_pb'].iloc[self._generate_number-1] + data['c2barn2_pb'].iloc[self._generate_number-1] + data['c2n2_pb'].iloc[self._generate_number-1] + data['n2n2_pb'].iloc[self._generate_number-1] + data['n2n3_pb'].iloc[self._generate_number-1] + data['n2n4_pb'].iloc[self._generate_number-1] + data['n2n5_pb'].iloc[self._generate_number-1])
-            if max(pow(data['N31'].iloc[self._generate_number-1], 2), pow(data['N32'].iloc[self._generate_number-1], 2), (pow(data['N33'].iloc[self._generate_number-1], 2)+ pow(data['N34'].iloc[self._generate_number-1], 2)), pow(data['N35'].iloc[self._generate_number-1], 2)) == pow(data['N35'].iloc[self._generate_number-1], 2):
-                cs13chi_in = cs13chi_pb - (data['c1barn3_pb'].iloc[self._generate_number-1] + data['c1n3_pb'].iloc[self._generate_number-1] + data['c2barn3_pb'].iloc[self._generate_number-1] + data['c2n3_pb'].iloc[self._generate_number-1] + data['n3n3_pb'].iloc[self._generate_number-1] + data['n2n3_pb'].iloc[self._generate_number-1] + data['n3n4_pb'].iloc[self._generate_number-1] + data['n3n5_pb'].iloc[self._generate_number-1])
-            if max(pow(data['N41'].iloc[self._generate_number-1], 2), pow(data['N42'].iloc[self._generate_number-1], 2), (pow(data['N43'].iloc[self._generate_number-1], 2) + pow(data['N44'].iloc[self._generate_number-1], 2)), pow(data['N45'].iloc[self._generate_number-1], 2)) == pow(data['N45'].iloc[self._generate_number-1], 2):
-                cs13chi_in = cs13chi_pb - (data['c1barn4_pb'].iloc[self._generate_number-1] + data['c1n4_pb'].iloc[self._generate_number-1] + data['c2barn4_pb'].iloc[self._generate_number-1] + data['c2n4_pb'].iloc[self._generate_number-1] + data['n4n4_pb'].iloc[self._generate_number-1] + data['n2n4_pb'].iloc[self._generate_number-1] + data['n3n4_pb'].iloc[self._generate_number-1] + data['n4n5_pb'].iloc[self._generate_number-1])
-            if max(pow(data['N51'].iloc[self._generate_number-1], 2), pow(data['N52'].iloc[self._generate_number-1], 2), (pow(data['N53'].iloc[self._generate_number-1], 2) + pow(data['N54'].iloc[self._generate_number-1], 2)), pow(data['N55'].iloc[self._generate_number-1], 2)) == pow(data['N55'].iloc[self._generate_number-1], 2):
-                cs13chi_in = cs13chi_pb - (data['c1barn5_pb'].iloc[self._generate_number-1] + data['c1n5_pb'].iloc[self._generate_number-1] + data['c2barn5_pb'].iloc[self._generate_number-1] + data['c2n5_pb'].iloc[self._generate_number-1] + data['n5n5_pb'].iloc[self._generate_number-1] + data['n2n5_pb'].iloc[self._generate_number-1] + data['n3n5_pb'].iloc[self._generate_number-1] + data['n4n5_pb'].iloc[self._generate_number-1])
+            elif self._model_name == 'NMSSM':
+                if max(pow(data['N11'].iloc[self._generate_number-1], 2), pow(data['N12'].iloc[self._generate_number-1], 2), (pow(data['N13'].iloc[self._generate_number-1], 2) + pow(data['N14'].iloc[self._generate_number-1], 2)), pow(data['N15'].iloc[self._generate_number-1], 2)) == pow(data['N15'].iloc[self._generate_number-1], 2):
+                    cs13chi_in = cs13chi_pb
+                if max(pow(data['N21'].iloc[self._generate_number-1], 2), pow(data['N22'].iloc[self._generate_number-1], 2), (pow(data['N23'].iloc[self._generate_number-1], 2) + pow(data['N24'].iloc[self._generate_number-1], 2)), pow(data['N25'].iloc[self._generate_number-1], 2)) == pow(data['N25'].iloc[self._generate_number-1], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn2_pb'].iloc[self._generate_number-1] + data['c1n2_pb'].iloc[self._generate_number-1] + data['c2barn2_pb'].iloc[self._generate_number-1] + data['c2n2_pb'].iloc[self._generate_number-1] + data['n2n2_pb'].iloc[self._generate_number-1] + data['n2n3_pb'].iloc[self._generate_number-1] + data['n2n4_pb'].iloc[self._generate_number-1] + data['n2n5_pb'].iloc[self._generate_number-1])
+                if max(pow(data['N31'].iloc[self._generate_number-1], 2), pow(data['N32'].iloc[self._generate_number-1], 2), (pow(data['N33'].iloc[self._generate_number-1], 2)+ pow(data['N34'].iloc[self._generate_number-1], 2)), pow(data['N35'].iloc[self._generate_number-1], 2)) == pow(data['N35'].iloc[self._generate_number-1], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn3_pb'].iloc[self._generate_number-1] + data['c1n3_pb'].iloc[self._generate_number-1] + data['c2barn3_pb'].iloc[self._generate_number-1] + data['c2n3_pb'].iloc[self._generate_number-1] + data['n3n3_pb'].iloc[self._generate_number-1] + data['n2n3_pb'].iloc[self._generate_number-1] + data['n3n4_pb'].iloc[self._generate_number-1] + data['n3n5_pb'].iloc[self._generate_number-1])
+                if max(pow(data['N41'].iloc[self._generate_number-1], 2), pow(data['N42'].iloc[self._generate_number-1], 2), (pow(data['N43'].iloc[self._generate_number-1], 2) + pow(data['N44'].iloc[self._generate_number-1], 2)), pow(data['N45'].iloc[self._generate_number-1], 2)) == pow(data['N45'].iloc[self._generate_number-1], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn4_pb'].iloc[self._generate_number-1] + data['c1n4_pb'].iloc[self._generate_number-1] + data['c2barn4_pb'].iloc[self._generate_number-1] + data['c2n4_pb'].iloc[self._generate_number-1] + data['n4n4_pb'].iloc[self._generate_number-1] + data['n2n4_pb'].iloc[self._generate_number-1] + data['n3n4_pb'].iloc[self._generate_number-1] + data['n4n5_pb'].iloc[self._generate_number-1])
+                if max(pow(data['N51'].iloc[self._generate_number-1], 2), pow(data['N52'].iloc[self._generate_number-1], 2), (pow(data['N53'].iloc[self._generate_number-1], 2) + pow(data['N54'].iloc[self._generate_number-1], 2)), pow(data['N55'].iloc[self._generate_number-1], 2)) == pow(data['N55'].iloc[self._generate_number-1], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn5_pb'].iloc[self._generate_number-1] + data['c1n5_pb'].iloc[self._generate_number-1] + data['c2barn5_pb'].iloc[self._generate_number-1] + data['c2n5_pb'].iloc[self._generate_number-1] + data['n5n5_pb'].iloc[self._generate_number-1] + data['n2n5_pb'].iloc[self._generate_number-1] + data['n3n5_pb'].iloc[self._generate_number-1] + data['n4n5_pb'].iloc[self._generate_number-1])
             return Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb
 
         os.chdir(self._Support_path)
@@ -278,8 +285,9 @@ class MadGraph(object):
         self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
         self._mg5_name = mg5_name_
-        self._mg5_category = mg5_category_
+        self._mg5_category = mg5_category_.upper()
         self._mg5_run_card = mg5_run_card_
+        self._model_name = MC_sim._model_name                                                                   #获得模型名称
     
     @property
     def mg5_name(self):
@@ -340,7 +348,7 @@ class MadGraph(object):
         if self._mg5_category == 'EW':
             os.system('rm -rf {}'.format(self._mg5_name))                                                                   # 删除上一次生成的文件夹
             os.system('./MG5_aMC_v2_6_4/bin/mg5_aMC proc_chi')                                                              # 启动MadGraph中生成相互作用过程的程序，产生“过程”文件，对应于mg5中的generate命令。这里的proc_chi是上一步生成的文件，如果需要改动这个文件的名字应该在上一步中改动。
-        if self._mg5_category == 'SL':
+        elif self._mg5_category == 'SL':
             os.system('rm -rf {0}/RunWeb {0}/index.html {0}/crossx.html {0}/HTML/* {0}/Events/*'.format(self._mg5_name))    # 删除上一次生成的文件，与EW不同的是，为了节省时间，SL的过程文件在运行了prepare.py之后已经生成过一次，因此只删除“过程”文件夹中必要的部分即可。
         os.system('cp param_card.dat pythia8_card.dat {0}/Cards/'.format(self._mg5_name))                                   # 将param_card.dat和pythia8_card.dat复制到mg5_name/Cards/下。
         os.system('cp {1} {0}/Cards/run_card.dat'.format(self._mg5_name, self._mg5_run_card))                               # 将mg5_run_card.dat复制到mg5_name/Cards/下。
@@ -364,6 +372,7 @@ class CheckMATE(object):
         self._CM_input_name = CM_input_name_                                                                    # 获取CheckMATE输入文件名。
         self._XSect_name = XSect_name_                                                                          # 获取XSect输入文件名。
         self._XSect_replace = XSect_replace_                                                                    # 获取XSect替换字典。
+        self._model_name = MC_sim._model_name                                                                   #获得模型名称
     
     @property 
     def CM_input_name(self):
