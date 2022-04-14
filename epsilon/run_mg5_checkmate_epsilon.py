@@ -30,6 +30,7 @@ from MC_sim_class import bcolors
         2022年4月8日：编写了CheckMATE类，补全了Prepare_program类和Prepare_subprocess类中的一些方法。
         2022年4月9日：编写了用于收集结果的函数。
         2022年4月10日：修改了一些关于路径名字和import时没有添加sys.path的问题。
+        2022年4月14日：添加了MSSM和NMSSM模型之间的区别
 '''
 
 class Prepare_program(object):
