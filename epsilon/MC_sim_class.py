@@ -47,7 +47,7 @@ class Monte_Carlo_simulation(object):
     这是单个蒙特卡洛模拟进程的主类，所有必要的属性和方法都存在这里。
     每当一个Monte_Carlo_simulation类被实例化时，即可视为一次蒙特卡洛模拟进程开始了。
     '''
-    def __init__(self, data_path_: str, model_name_, info_name_list_: list, main_path_: str = sys.path[0]) -> None:
+    def __init__(self, data_path_: str, model_name_: str, info_name_list_: list, main_path_: str = sys.path[0]) -> None:
         '''
         进程的初始化，获得: 主进程目录，数据目录，generate_number， MadGraph目录
         数据目录包含了Spectrums文件夹，以及ck_input.csv文件。ck_input.csv文件中包含了所有要计算的参数点信息。
