@@ -24,4 +24,4 @@ def make_dirs(dirs_path_root: str, dirs_name_root: str, size: int) -> None:
         if not os.path.exists(os.path.join(dir_name, 'Externals','CheckMATE')):
                 os.mkdir(os.path.join(dir_name, 'Externals','CheckMATE'))
 
-make_dirs('/home/jxl/Desktop','2au8c_', 5)
+make_dirs('/home/jxl/Desktop','2tau8c_', 5)
