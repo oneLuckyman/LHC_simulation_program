@@ -58,7 +58,7 @@ class Prepare_program(object):
                 if search_keyword in line:
                     ck_ini_message = re.split(r'[\s\,]+', line)         #本程序所需的ck.ini中的信息是，要计算的目标参数点所对应的ck_input.csv的行数
                     generate_number_range = [int(round(float(ck_ini_message[-4]))),int(round(float(ck_ini_message[-3])))]   #获得要计算的目标参数点的范围
-                    generate_numbers = list(range(generate_number_range[0] - 1, generate_number_range[1], 1))              #获得要计算的目标参数点的序列
+                    generate_numbers = list(range(generate_number_range[0], generate_number_range[1] + 1, 1))              #获得要计算的目标参数点的序列
         return generate_numbers
 
     def refresh_ck_r(self) -> None:
