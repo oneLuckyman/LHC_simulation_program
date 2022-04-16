@@ -482,4 +482,32 @@ class CheckMATE(object):
 if __name__ == '__main__':
     #测试一个进程
 
-    pass
+    #Prepare_program 
+    prepare_program = Prepare_program()
+    generate_numbers = prepare_program.get_generate_numbers_from_ck_ini()
+    prepare_program.refresh_ck_r()
+    prepare_program.refresh_results_file() 
+
+    for generate_number in generate_numbers:
+        ## prepare_subprocess
+        prepare_subprocess = Prepare_subprocess(generate_number)
+        prepare_subprocess.prepare_MadGraph()
+        prepare_subprocess.prepare_CheckMATE()
+        prepare_subprocess.remove_old_CM_result()
+
+        ## Execute
+        mg5_gnmssm_chi = MadGraph('gnmssm_chi', 'ew', 'run_chi.dat')
+        mg5_gnmssm_chi.mg5_Execute()
+        CM_gnmssm_chi = CheckMATE('gnmssm_chi.dat','cs13chi_in','ES_cs13chi')
+        CM_gnmssm_chi.CM_Execute()
+        mg5_gnmssm_chi.remove_result()
+
+        mg5_gnmssm_smusmu = MadGraph('gnmssm_smusmu', 'SL', 'run_smu.dat')
+        mg5_gnmssm_smusmu.mg5_Execute()
+        CM_gnmssm_smusmu = CheckMATE('gnmssm_smusmu.dat','cs13smu_pb','ES_cs13smu')
+        CM_gnmssm_smusmu.CM_Execute()
+        mg5_gnmssm_smusmu.remove_result()
+
+        ## end
+        prepare_subprocess.after_ck_Execute()
+        prepare_subprocess.collect_result()
