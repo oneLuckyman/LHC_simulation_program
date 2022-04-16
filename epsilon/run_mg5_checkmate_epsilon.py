@@ -357,6 +357,14 @@ class MadGraph(object):
         os.system('./{0}/bin/generate_events -f'.format(self._mg5_name))                                                    # 启动MadGraph中生成事例的程序，产生“事例”文件夹，对应于mg5中的launch命令。这也是单个MadGraph程序的最后一步。输出结果保存在mg5_name/Events/run_01/下。
         os.chdir(self._main_path)                                                                                           # 返回主目录。
 
+    def remove_result(self) -> None:
+        '''
+        删除这一个MG5生成的结果
+        '''
+        os.chdir(self._MadGraph_path)
+        os.remove(os.path.join(self._mg5_name, 'Events', 'run_01', 'tag_1_pythia8_events.hepmc'))                            # 删除这一个MG5生成的结果
+        os.chdir(self._main_path)
+    
     def pass_():
         pass
 
@@ -473,4 +481,5 @@ class CheckMATE(object):
 
 if __name__ == '__main__':
     #测试一个进程
+
     pass
