@@ -510,4 +510,5 @@ if __name__ == '__main__':
 
         ## end
         prepare_subprocess.after_ck_Execute()
+        prepare_subprocess.remove_old_CM_result()
         prepare_subprocess.collect_result()
