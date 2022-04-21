@@ -54,7 +54,7 @@ class Monte_Carlo_simulation(object):
         数据目录包含了Spectrums文件夹，以及ck_input.csv文件。ck_input.csv文件中包含了所有要计算的参数点信息。
         '''
         self._main_path = main_path_                                                                       #获得主进程目录
-        self._process_name = main_path_.split('/')[-2]                                                     #对应的进程序号
+        self._process_name = main_path_.split('/')[-2]                                                     #获得对应的进程序号
         self._data_path = data_path_                                                                       #获得数据目录
         self._MadGraph_path = os.path.join(self._main_path, '../Externals/Madgraph/')                      #获得MadGraph的目录
         self._CheckMate_path = os.path.join(self._main_path, '../Externals/CheckMATE/CM_v2_26/')           #获得CheckMate的目录
@@ -62,7 +62,7 @@ class Monte_Carlo_simulation(object):
         self._result_path = os.path.join(self._main_path, 'ck_1/')                                         #获得结果目录
         self._info_name_list = info_name_list_                                                             #获得信息名称列表
         self._model_name = model_name_.upper()                                                             #获得模型名称
-        self._Event_root_path = Event_root_path_                                                           #存放madgraph的event文件的根目录
+        self._Event_root_path = Event_root_path_                                                           #获得存放madgraph的event文件的根目录
 
         if not os.path.exists(self._result_path):
             os.mkdir(self._result_path)
