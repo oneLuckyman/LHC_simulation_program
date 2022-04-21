@@ -290,6 +290,7 @@ class MadGraph(object):
         self._mg5_category = mg5_category_.upper()
         self._mg5_run_card = mg5_run_card_
         self._model_name = MC_sim._model_name                                                                   #获得模型名称
+        self._Event_root_path = MC_sim._Event_root_path                                                         #获得event的根目录
         self._Event_path = os.path.join(MC_sim._Event_root_path, MC_sim._process_name)                          #获得madgraph的event文件存放的目录
         
     @property
@@ -350,7 +351,7 @@ class MadGraph(object):
         os.chdir(self._Event_path)
         if self._mg5_category == 'EW':
             os.system('rm -rf {}'.format(self._mg5_name))                                                                   # 删除上一次生成的文件夹
-            os.system('{0}/MG5_aMC_v2_6_4/bin/mg5_aMC {0}/proc_chi'.format(self._MadGraph_path))                              # 启动MadGraph中生成相互作用过程的程序，产生“过程”文件，对应于mg5中的generate命令。这里的proc_chi是上一步生成的文件，如果需要改动这个文件的名字应该在上一步中改动。
+            os.system('{0}/MG5_aMC_v2_6_4/bin/mg5_aMC {0}/proc_chi'.format(self._MadGraph_path))                            # 启动MadGraph中生成相互作用过程的程序，产生“过程”文件，对应于mg5中的generate命令。这里的proc_chi是上一步生成的文件，如果需要改动这个文件的名字应该在上一步中改动。
         elif self._mg5_category == 'SL':
             os.system('rm -rf {0}/RunWeb {0}/index.html {0}/crossx.html {0}/HTML/* {0}/Events/*'.format(self._mg5_name))    # 删除上一次生成的文件，与EW不同的是，为了节省时间，SL的过程文件在运行了prepare.py之后已经生成过一次，因此只删除“过程”文件夹中必要的部分即可。
         os.system('cp param_card.dat pythia8_card.dat {0}/Cards/'.format(self._mg5_name))                                   # 将param_card.dat和pythia8_card.dat复制到mg5_name/Cards/下。
@@ -374,16 +375,20 @@ class CheckMATE(object):
     '''
     CheckMATE类，获取单个CheckMATE进程的信息，并调用CheckMATE进程。
     '''
-    def __init__(self, CM_input_name_, XSect_name_, XSect_replace_) -> None:
+    def __init__(self, CM_input_name_: str, mg5_name_: str, XSect_name_: str, XSect_replace_: str) -> None:
         self._main_path = MC_sim._main_path                                                                     #获得主目录
+        self._process_name = MC_sim._process_name                                                               #对应的进程序号
         self._data_path = MC_sim._data_path                                                                     #获得数据目录
         self._MadGraph_path = MC_sim.MadGraph_path                                                              #获得MadGraph的目录
         self._CheckMate_path = MC_sim.CheckMate_path                                                            #获得CheckMate的目录
         self._Support_path = MC_sim.Support_path                                                                #获得ck的目录
-        self._CM_input_name = CM_input_name_                                                                    # 获取CheckMATE输入文件名。
-        self._XSect_name = XSect_name_                                                                          # 获取XSect输入文件名。
-        self._XSect_replace = XSect_replace_                                                                    # 获取XSect替换字典。
+        self._CM_input_name = CM_input_name_                                                                    #获取CheckMATE输入文件名。
+        self._mg5_name = mg5_name_                                                                              #获取CheckMATE输入所需的MG5文件名。
+        self._XSect_name = XSect_name_                                                                          #获取XSect输入文件名。
+        self._XSect_replace = XSect_replace_                                                                    #获取XSect替换字典。
         self._model_name = MC_sim._model_name                                                                   #获得模型名称
+        self._Event_root_path = MC_sim._Event_root_path                                                         #获得event的根目录
+        self._Event_path = os.path.join(MC_sim._Event_root_path, MC_sim._process_name)                          #获得madgraph的event文件存放的目录
     
     @property 
     def CM_input_name(self):
@@ -477,9 +482,13 @@ class CheckMATE(object):
             '''
             为Checkmate的输入文件指定event
             '''
+            P8_event_path = "Events/run_01/tag_1_pythia8_events.hepmc"
+            with open (self._CM_input_name, mode = 'a') as ck_input_file:
+                ck_input_file.write("Events: " + os.path.join(self._Event_path, self._mg5_name, P8_event_path))
 
         get_XSect_number(self)                                                      # 从ck_input.dat中获取XSect。
         replace_Xsect(self)                                                         # 替换CheckMATE输入文件中的XSect。
+        specify_event_path(self)                                                    # 为Checkmate的输入文件指定event。
         os.chdir(self._CheckMate_path)                                              # 切换到CheckMATE_path目录下。
         os.system('./bin/CheckMATE bin/{}'.format(self._CM_input_name))             # 执行CheckMATE程序。
         os.chdir(self._main_path)                                                   # 返回主目录。
