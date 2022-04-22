@@ -168,7 +168,7 @@ class Monte_Carlo_simulation(object):
 
 if __name__ != '__main__':
     info_name_list = ['Index']
-    MC_sim = Monte_Carlo_simulation('/home/jxl/Desktop/program_test/collider_sim/Test/gnmssm',"/mnt/storage/" , 'nmssm', info_name_list)
+    MC_sim = Monte_Carlo_simulation('/home/zhd/gnmssm',"/mnt/storage/" , 'nmssm', info_name_list)
 
 if __name__ == '__main__':
     print('Do not run this file directly!!')
