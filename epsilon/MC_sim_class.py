@@ -48,13 +48,12 @@ class Monte_Carlo_simulation(object):
     这是单个蒙特卡洛模拟进程的主类，所有必要的属性和方法都存在这里。
     每当一个Monte_Carlo_simulation类被实例化时，即可视为一次蒙特卡洛模拟进程开始了。
     '''
-    def __init__(self, data_path_: str, Event_root_path_: str, model_name_: str, info_name_list_: list, main_path_: str = sys.path[0]) -> None:
+    def __init__(self, data_path_: str, model_name_: str, info_name_list_: list, main_path_: str = sys.path[0]) -> None:
         '''
         进程的初始化，获得: 主进程目录，数据目录，generate_number， MadGraph目录
         数据目录包含了Spectrums文件夹，以及ck_input.csv文件。ck_input.csv文件中包含了所有要计算的参数点信息。
         '''
         self._main_path = main_path_                                                                       #获得主进程目录
-        self._process_name = main_path_.split('/')[-2]                                                     #获得对应的进程序号
         self._data_path = data_path_                                                                       #获得数据目录
         self._MadGraph_path = os.path.join(self._main_path, '../Externals/Madgraph/')                      #获得MadGraph的目录
         self._CheckMate_path = os.path.join(self._main_path, '../Externals/CheckMATE/CM_v2_26/')           #获得CheckMate的目录
@@ -62,7 +61,6 @@ class Monte_Carlo_simulation(object):
         self._result_path = os.path.join(self._main_path, 'ck_1/')                                         #获得结果目录
         self._info_name_list = info_name_list_                                                             #获得信息名称列表
         self._model_name = model_name_.upper()                                                             #获得模型名称
-        self._Event_root_path = Event_root_path_                                                           #获得存放madgraph的event文件的根目录
 
         if not os.path.exists(self._result_path):
             os.mkdir(self._result_path)
@@ -170,7 +168,7 @@ class Monte_Carlo_simulation(object):
 
 if __name__ != '__main__':
     info_name_list = ['Index']
-    MC_sim = Monte_Carlo_simulation('/home/jxl/Desktop/program_test/collider_sim/Test/gnmssm',"/mnt/storage/" , 'nmssm', info_name_list)
+    MC_sim = Monte_Carlo_simulation('/home/zhd/gnmssm/', 'nmssm', info_name_list)
 
 if __name__ == '__main__':
     print('Do not run this file directly!!')
