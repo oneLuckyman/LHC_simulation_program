@@ -57,7 +57,7 @@
                     *index*/                            # 存放单个参数点的Madgraph结果和Checkmate结果，单一进程计算了多少个参数点就会有多少个
     
     游离于根目录级之外的文件夹，这些文件可以存放在任何路径下：
-        2tau8c_*/:                          # 运行事例模拟以及存放事例模拟结果的文件夹，项目调用多少进程就会有多少个这样的文件夹，这个目录可以是任何目录
+        2tau8c_*/:                          # 运行事例模拟以及存放事例模拟结果的文件夹，项目调用多少进程就会有多少个这样的文件夹，这个目录可以是任何名字，可以在任何路径下
             gnmssm_chi/                         # 模拟某一些过程的事例，这个例子中是与chi有关的
             gnmssm_smusmu/                      # 模拟某一些过程的事例，这个例子中是与smu有关的
             template/                           # 所有运行事例模拟所需要的模板文件，从Project_prepare中复制而来
@@ -78,5 +78,117 @@
 
 @开发日志：
         2022年4月23日：开始编写程序的文档，说明文件结构
+        2022年4月24日：文件结构说明完毕，基本信息类写完了
 '''
 
+import argparse
+import os,sys,re
+
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+ranks = comm.Get_size()
+
+class Base_message(object):
+    '''
+    这个类包含了所有的基本信息
+    '''
+    def __init__(self, data_path_: str, Event_root_path_, model_name_: str, size_: int, info_name_list_: list, 
+                        main_path_: str = sys.path[0], process_name_: str = '2tau8c') -> None:
+
+        self.main_path = main_path_
+        self.data_path = os.path.join(self.main_path, data_path_)
+        self.model_name = model_name_
+        self.size = size_
+        self.info_name_list = info_name_list_
+        self.process_name = process_name_
+        self.Event_root_path = Event_root_path_
+        self.processes = self.get_process_name()
+        self.Madgraph_paths = self.get_Madgraph_paths()
+        self.CheckMATE_paths = self.get_CheckMATE_paths()
+        self.Results_paths = self.get_Results_paths()
+        self.Event_paths = self.get_Event_paths()
+        self.Event_template_paths = self.get_Event_template_paths()
+
+    def get_process_name(self) -> list:
+        '''
+        获得所有进程文件夹的名字
+        '''
+        process_names = []
+        for i in range(self.size):
+            process_names.append(self.process_name + '_' + str(i))
+        return process_names
+    
+    def get_Madgraph_paths(self) -> list:
+        '''
+        获得所有Madgraph文件夹的路径
+        '''
+        MG5_paths = []
+        for i in range(self.size):
+            MG5_path = os.path.join(self.main_path, self.processes[i], 'Madgraph')
+            MG5_paths.append(MG5_path)
+        return MG5_paths
+    
+    def get_Checkmate_paths(self) -> list:
+        '''
+        获得所有Checkmate文件夹的路径
+        '''
+        CM_paths = []
+        for i in range(self.size):
+            CM_path = os.path.join(self.main_path, self.processes[i], 'CheckMATE')
+            CM_paths.append(CM_path)
+        return CM_paths
+
+    def get_Results_paths(self) -> list:
+        '''
+        获得所有Results文件夹的路径
+        '''
+        Results_paths = []
+        for i in range(self.size):
+            Results_path = os.path.join(self.main_path, self.processes[i], 'Results/')
+            Results_paths.append(Results_path)
+        return Results_paths
+    
+    def get_after_ck_paths(self) -> list:
+        '''
+        获得所有Results文件夹下的after_ck文件夹的路径
+        '''
+        after_ck_paths = []
+        for i in range(self.size):
+            after_ck_path = os.path.join(self.main_path, self.processes[i], 'Results', 'after_ck/')
+            after_ck_paths.append(after_ck_path)
+        return after_ck_paths
+
+    def get_Event_paths(self) -> list:
+        '''
+        获得所有Event文件夹的路径
+        '''
+        Event_paths = []
+        for i in range(self.size):
+            Event_path = os.path.join(self.Event_root_path, self.processes[i])
+            Event_paths.append(Event_path)
+        return Event_paths
+    
+    def get_Event_template_paths(self) -> list:
+        '''
+        获得所有Event文件夹下存放所有模板的文件夹路径
+        '''
+        Event_template_paths = []
+        for i in range(self.size):
+            Event_template_path = os.path.join(self.Event_root_path, self.processes[i], 'template/')
+            Event_template_paths.append(Event_template_path)
+        return Event_template_paths
+
+class Project_prepare(object):
+    def __init__(self, base_message_: Base_message) -> None:
+        self.base_message = base_message_
+
+    def mkdirs(self) -> None:
+        pass
+
+    def install_Madgraph(self) -> None:
+        '''
+        安装Madgraph
+        '''
+        pass
