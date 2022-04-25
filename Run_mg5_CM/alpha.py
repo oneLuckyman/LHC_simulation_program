@@ -27,6 +27,7 @@
             mg5_configuration.txt               # MG5_aMC的配置文件
             installP8                           # 安装Pythia8的脚本
             madevent_interface.py               # madevent的接口文件
+            pythia8_card.dat                    # Pythia8的配置文件
             proc/                               # 存放generate events脚本的文件夹
                 proc_n1                             # generate events的脚本
                 proc_n2                             # generate events的脚本
@@ -62,27 +63,27 @@
             gnmssm_smusmu/                      # 模拟某一些过程的事例，这个例子中是与smu有关的
             template/                           # 所有运行事例模拟所需要的模板文件，从Project_prepare中复制而来
                 proc/                               # 存放generate events脚本的文件夹
-                proc_n1                             # generate events的脚本
-                proc_n2                             # generate events的脚本
-                proc_n3                             # generate events的脚本
-                proc_n4                             # generate events的脚本
-                proc_n5                             # generate events的脚本
+                    proc_n1                             # generate events的脚本
+                    proc_n2                             # generate events的脚本
+                    proc_n3                             # generate events的脚本
+                    proc_n4                             # generate events的脚本
+                    proc_n5                             # generate events的脚本
                 proc_chi                            # generate events的脚本
                 proc_smusmu                         # generate events的脚本
                 run_card.dat                        # 事例模拟所需要的run_card.dat模板文件
                 run_chi.dat                         # 事例模拟所需要的run_card.dat模板文件
                 run_smu.dat                         # 事例模拟所需要的run_card.dat模板文件
-                gnmssm_chi.dat                      # checkmate输入模板文件
-                gnmssm_smusmu.dat                   # checkmate输入模板文件
 
 
 @开发日志：
         2022年4月23日：开始编写程序的文档，说明文件结构
-        2022年4月24日：文件结构说明完毕，基本信息类写完了
+        2022年4月24日：文件结构说明完毕，Base_message类写完了
+        2022年4月25日：Project_prepare类基本写完了
 '''
 
 import argparse
 import os,sys,re
+import shutil
 
 from mpi4py import MPI
 
@@ -94,17 +95,23 @@ class Base_message(object):
     '''
     这个类包含了所有的基本信息
     '''
-    def __init__(self, data_path_: str, Event_root_path_, model_name_: str, size_: int, info_name_list_: list, 
-                        main_path_: str = sys.path[0], process_name_: str = '2tau8c') -> None:
+    def __init__(self, Event_root_path_, model_name_: str, size_: int, info_name_list_: list, 
+                        main_path_: str = sys.path[0], data_path_: str = 'gnmssm/', project_prepare_path_: str = 'Project_prepare/', process_name_: str = '2tau8c',
+                        comm_ = MPI.COMM_WORLD, rank_ = comm.Get_rank(), ranks_ = comm.Get_size()) -> None:
 
         self.main_path = main_path_
         self.data_path = os.path.join(self.main_path, data_path_)
+        self.Event_root_path = Event_root_path_
+        self.project_prepare_path = os.path.join(self.main_path, project_prepare_path_)
         self.model_name = model_name_
         self.size = size_
+        self.comm = comm_
+        self.rank = rank_
+        self.ranks = ranks_
         self.info_name_list = info_name_list_
         self.process_name = process_name_
-        self.Event_root_path = Event_root_path_
         self.processes = self.get_process_name()
+        self.process_paths = self.get_process_path()
         self.Madgraph_paths = self.get_Madgraph_paths()
         self.CheckMATE_paths = self.get_CheckMATE_paths()
         self.Results_paths = self.get_Results_paths()
@@ -119,6 +126,15 @@ class Base_message(object):
         for i in range(self.size):
             process_names.append(self.process_name + '_' + str(i))
         return process_names
+    
+    def get_process_path(self) -> list:
+        '''
+        获得所有进程文件夹的路径
+        '''
+        process_paths = []
+        for i in range(self.size):
+            process_paths.append(os.path.join(self.main_path, self.process_name + '_' + str(i)))
+        return process_paths
     
     def get_Madgraph_paths(self) -> list:
         '''
@@ -185,10 +201,77 @@ class Project_prepare(object):
         self.base_message = base_message_
 
     def mkdirs(self) -> None:
-        pass
+        for i in range(self.base_message.size):
+            if not os.path.exists(self.base_message.process_paths[i]):
+                os.makedirs(self.base_message.process_paths[i])
+            if not os.path.exists(self.base_message.Madgraph_paths[i]):
+                os.makedirs(self.base_message.Madgraph_paths[i])
+            if not os.path.exists(self.base_message.CheckMATE_paths[i]):
+                os.makedirs(self.base_message.CheckMATE_paths[i])
+            if not os.path.exists(self.base_message.Results_paths[i]):
+                os.makedirs(self.base_message.Results_paths[i])
+            if not os.path.exists(self.base_message.Event_paths[i]):
+                os.makedirs(self.base_message.Event_paths[i])
+            if not os.path.exists(self.base_message.Event_template_paths[i]):
+                os.makedirs(self.base_message.Event_template_paths[i])
 
     def install_Madgraph(self) -> None:
         '''
         安装Madgraph
         '''
+        for i in range(self.base_message.size):
+            if self.base_message.rank == i:
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'MG5_aMC_v2_6_4.tar.gz'), self.base_message.Madgraph_paths[i])
+                os.chdir(self.base_message.Madgraph_paths[i])
+                os.system('tar -zxvf MG5_aMC_v2_6_4.tar.gz')
+                os.system('rm -rf MG5_aMC_v2_6_4.tar.gz')
+                os.chdir(self.base_message.project_prepare_path)
+                os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/mg5_aMC installP8'))
+                os.chdir(self.base_message.main_path)
+
+    def install_CheckMATE(self) -> None:
+        '''
+        安装CheckMATE
+        '''
+        for i in range(self.base_message.size):
+            if self.base_message.rank == i:
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'CM_v2_26.tar.gz'), self.base_message.CheckMATE_paths[i])
+                os.chdir(self.base_message.CheckMATE_paths[i])
+                os.system('tar -zxvf CM_v2_26.tar.gz')
+                os.system('rm -rf CM_v2_26.tar.gz')
+                os.chdir('CM_v2_26')
+                # 配置环境如果发生改变需要修改下面这一行中的路径
+                os.system("./configure --with-rootsys=/opt/root-6.18.04/installdir --with-delphes=/opt/delphes_for_CheckMATE --with-pythia=/opt/pythia8245 --with-hepmc=/opt/HepMC-2.06.11")
+                os.system('make -j 20')
+                os.chdir(self.base_message.project_prepare_path)
+                shutil.copy2('gnmssm_chi.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
+                shutil.copy2('gnmssm_smusmu.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
+                os.chdir(self.base_message.main_path)
+
+    def Prepare_Madgraph_inputfile(self) -> None:
+        '''
+        准备Madgraph输入文件
+        '''
+        for i in range(self.base_message.size):
+            if self.base_message.rank == i:
+                shutil.copytree(os.path.join(self.base_message.project_prepare_path, 'proc/'), os.path.join(self.base_message.Event_template_paths[i], 'proc/'))
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_chi'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_card.dat'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madevent_interface.py'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[i])
+                
+                os.chdir(self.base_message.Event_paths[i])
+                os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
+                os.chdir(self.base_message.main_path)
+
+    def sel_ck():
         pass
+
+
+
+            
+            
