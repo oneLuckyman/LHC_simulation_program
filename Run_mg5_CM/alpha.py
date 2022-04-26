@@ -5,7 +5,11 @@
 '''
 @作者:  贾兴隆
 @说明:  本程序的目标功能是实现蒙特卡洛模拟LHC对撞实验的自动化，与上个系列不同，该系列程序将囊括从准备到收集结果的所有步骤，同时支持多核运行并最大程度保持灵活性。
-    
+    类的设置仍然分为三大类：
+        第一大类：应用于全局的类，一旦项目开始就不再变化的数据和方法
+        第二大类：应用于项目中每个进程的类，一旦一个进程开始就不再变化的数据和方法，或者说generate_numbers一旦确定就不再变化的类
+        第三大类：应用于每个进程的每个循环的类，一旦一个循环开始就不再变化的数据和方法，或者说generate_number一旦确定就不再变化的类
+
     下面是文件结构的一个例子，暂时使用的是当前各服务器正在使用的名称
     起始于根目录级的主要文件结构：
         Data_dir/:                           # 用于存放所有的数据文件，原gnmssm文件夹
@@ -79,7 +83,9 @@
         2022年4月23日：开始编写程序的文档，说明文件结构
         2022年4月24日：文件结构说明完毕，Base_message类写完了
         2022年4月25日：Project_prepare类基本写完了
+        2022年4月26日：编写了generate_number相关的方法
 '''
+
 
 import argparse
 import os,sys,re
@@ -94,8 +100,9 @@ ranks = comm.Get_size()
 class Base_message(object):
     '''
     这个类包含了所有的基本信息
+    属于第一大类
     '''
-    def __init__(self, Event_root_path_, model_name_: str, size_: int, info_name_list_: list, 
+    def __init__(self, Event_root_path_, model_name_: str, size_: int, min_num_: int, max_num_: int, info_name_list_: list, 
                         main_path_: str = sys.path[0], data_path_: str = 'gnmssm/', project_prepare_path_: str = 'Project_prepare/', process_name_: str = '2tau8c',
                         comm_ = MPI.COMM_WORLD, rank_ = comm.Get_rank(), ranks_ = comm.Get_size()) -> None:
 
@@ -105,12 +112,14 @@ class Base_message(object):
         self.project_prepare_path = os.path.join(self.main_path, project_prepare_path_)
         self.model_name = model_name_
         self.size = size_
+        self.all_generate_num = list(range(min_num_, max_num_+1))
         self.comm = comm_
         self.rank = rank_
         self.ranks = ranks_
         self.info_name_list = info_name_list_
         self.process_name = process_name_
         self.processes = self.get_process_name()
+        self.generate_numbers_lst = self.get_generate_numbers_lst()
         self.process_paths = self.get_process_path()
         self.Madgraph_paths = self.get_Madgraph_paths()
         self.CheckMATE_paths = self.get_CheckMATE_paths()
@@ -136,6 +145,15 @@ class Base_message(object):
             process_paths.append(os.path.join(self.main_path, self.process_name + '_' + str(i)))
         return process_paths
     
+    def get_generate_numbers_lst(self) -> list:
+        '''
+        将一个list分成数个list
+        分配每个进程要计算的generate_numbers
+        '''
+        lst = self.all_generate_num
+        n = ((len(lst))//self.size) + 1
+        return [lst[i:i + n] for i in range(0, len(lst), n)]
+
     def get_Madgraph_paths(self) -> list:
         '''
         获得所有Madgraph文件夹的路径
@@ -197,10 +215,17 @@ class Base_message(object):
         return Event_template_paths
 
 class Project_prepare(object):
+    '''
+    项目开始前的准备，包括文件结构的建立，程序的安装，各类输入文件的放置
+    属于第一大类
+    '''
     def __init__(self, base_message_: Base_message) -> None:
         self.base_message = base_message_
 
     def mkdirs(self) -> None:
+        '''
+        建立项目所需要的的文件结构
+        '''
         for i in range(self.base_message.size):
             if not os.path.exists(self.base_message.process_paths[i]):
                 os.makedirs(self.base_message.process_paths[i])
@@ -231,7 +256,7 @@ class Project_prepare(object):
 
     def install_CheckMATE(self) -> None:
         '''
-        安装CheckMATE
+        安装CheckMATE，并把CheckMATE的输入文件复制到CheckMATE的运行目录下
         '''
         for i in range(self.base_message.size):
             if self.base_message.rank == i:
@@ -272,6 +297,12 @@ class Project_prepare(object):
         pass
 
 
+class Process_prepare(object):
+    '''
+    单个进程开始前的准备，包括获得generate_numbers,清洗单个进程内的旧文件,生成对应新文件
+    属于第二大类
+    '''
+    def __init__(self, base_message_: Base_message) -> None:
+        self.base_message = base_message_
 
-            
-            
+    
