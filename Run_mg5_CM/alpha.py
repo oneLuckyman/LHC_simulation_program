@@ -84,6 +84,7 @@
         2022年4月24日：文件结构说明完毕，Base_message类写完了
         2022年4月25日：Project_prepare类基本写完了
         2022年4月26日：编写了generate_number相关的方法
+        2022年4月27日：编写了Process_prepare类
 '''
 
 
@@ -124,6 +125,7 @@ class Base_message(object):
         self.Madgraph_paths = self.get_Madgraph_paths()
         self.CheckMATE_paths = self.get_CheckMATE_paths()
         self.Results_paths = self.get_Results_paths()
+        self.after_ck_paths = self.get_after_ck_paths()
         self.Event_paths = self.get_Event_paths()
         self.Event_template_paths = self.get_Event_template_paths()
 
@@ -151,7 +153,7 @@ class Base_message(object):
         分配每个进程要计算的generate_numbers
         '''
         lst = self.all_generate_num
-        n = ((len(lst))//self.size) + 1
+        n = (len(lst)//self.size) + 1
         return [lst[i:i + n] for i in range(0, len(lst), n)]
 
     def get_Madgraph_paths(self) -> list:
@@ -183,6 +185,16 @@ class Base_message(object):
             Results_path = os.path.join(self.main_path, self.processes[i], 'Results/')
             Results_paths.append(Results_path)
         return Results_paths
+    
+    def get_after_ck_paths(self) -> list:
+        '''
+        获得所有after_ck文件夹的路径
+        '''
+        after_ck_paths = []
+        for i in range(self.size):
+            after_ck_path = os.path.join(self.main_path, self.processes[i], 'Results/', 'after_ck/')
+            after_ck_paths.append(after_ck_path)
+        return after_ck_paths
     
     def get_after_ck_paths(self) -> list:
         '''
@@ -235,6 +247,8 @@ class Project_prepare(object):
                 os.makedirs(self.base_message.CheckMATE_paths[i])
             if not os.path.exists(self.base_message.Results_paths[i]):
                 os.makedirs(self.base_message.Results_paths[i])
+            if not os.path.exists(self.base_message.after_ck_paths[i]):
+                os.makedirs(self.base_message.after_ck_paths[i])
             if not os.path.exists(self.base_message.Event_paths[i]):
                 os.makedirs(self.base_message.Event_paths[i])
             if not os.path.exists(self.base_message.Event_template_paths[i]):
@@ -304,5 +318,33 @@ class Process_prepare(object):
     '''
     def __init__(self, base_message_: Base_message) -> None:
         self.base_message = base_message_
+
+    def refresh_ck_r(self) -> None:
+        '''
+        刷新ck_r.txt文件。ck_r.txt是存放CheckMATE结果的文件，每次运行程序时，都会将ck_r.txt清空，然后将结果写入ck_r.txt。
+        '''
+        for i in range(self.base_message.size):
+            os.chdir(self.base_message.after_ck_paths[i])                                               # 切换到ck结果存放路径
+            os.system('rm -rf after_ck/ck_r.txt')                                                       # 删除旧的ck结果文件
+        #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
+            with open(os.path.join(self.base_message.after_ck_paths[i], 'ck_r.txt'), 'w') as ck_r:
+                ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
+
+    def write_list_to_file(self, list, file) -> None:
+        '''
+        把一个列表的信息写入文件的第一行
+        '''
+        with open(file,'w') as f:
+            for i in list:
+                f.write(str(i)+'\t')
+            f.write('\n')
+    
+    def refresh_results_file(self) -> None:
+        '''
+        刷新GridData.txt文件。这里存放着最终需要的所有数据。
+        '''
+        shutil.rmtree(os.path.join(self.base_message.Results_paths, 'GridData.txt'))
+        all_info_name = self.info_name_list + ["robs", "rexp", "robscons", "rexpcons"]                          # 将所有信息名称和ck结果名称添加到一个列表中
+        self.write_list_to_file(all_info_name,os.path.join(self.base_message.Results_paths, 'GridData.txt'))    # 将信息名称写入结果文件
 
     
