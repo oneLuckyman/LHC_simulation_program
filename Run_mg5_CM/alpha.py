@@ -12,7 +12,7 @@
 
     下面是文件结构的一个例子，暂时使用的是当前各服务器正在使用的名称
     起始于根目录级的主要文件结构：
-        Data_dir/:                           # 用于存放所有的数据文件，原gnmssm文件夹
+        MC_data/:                           # 用于存放所有的数据文件，原gnmssm文件夹
             ck_input.csv                        # 存放所有Checkmate可能的输入数据的文件
             muonSPhenoSPC/                      # 存放所有smodels输入谱的文件夹
             muonSPhenoSPC_1/                    # 存放所有SPheno输出谱的文件夹
@@ -32,6 +32,9 @@
             installP8                           # 安装Pythia8的脚本
             madevent_interface.py               # madevent的接口文件
             pythia8_card.dat                    # Pythia8的配置文件
+
+            # 需要修改
+
             proc/                               # 存放generate events脚本的文件夹
                 proc_n1                             # generate events的脚本
                 proc_n2                             # generate events的脚本
@@ -46,7 +49,7 @@
             gnmssm_chi.dat                      # checkmate输入模板文件
             gnmssm_smusmu.dat                   # checkmate输入模板文件
 
-        2tau8c_*/:                           # 单一的进程文件夹，项目调用多少进程就会有多少个这样的文件夹，下面的所有文件夹都是针对单一进程的
+        process_*/:                           # 单一的进程文件夹，项目调用多少进程就会有多少个这样的文件夹，下面的所有文件夹都是针对单一进程的
             CheckMATE/                          # 存放所有与Checkmate有关系的文件
                 ck_input.dat                        # Checkmate输入数据文件
                 CM_v2_26/                           # Checkmate主程序文件夹
@@ -62,7 +65,7 @@
                     *index*/                            # 存放单个参数点的Madgraph结果和Checkmate结果，单一进程计算了多少个参数点就会有多少个
     
     游离于根目录级之外的文件夹，这些文件可以存放在任何路径下：
-        2tau8c_*/:                          # 运行事例模拟以及存放事例模拟结果的文件夹，项目调用多少进程就会有多少个这样的文件夹，这个目录可以是任何名字，可以在任何路径下
+        process_*/:                          # 运行事例模拟以及存放事例模拟结果的文件夹，项目调用多少进程就会有多少个这样的文件夹，这个目录可以是任何名字，可以在任何路径下
             gnmssm_chi/                         # 模拟某一些过程的事例，这个例子中是与chi有关的
             gnmssm_smusmu/                      # 模拟某一些过程的事例，这个例子中是与smu有关的
             template/                           # 所有运行事例模拟所需要的模板文件，从Project_prepare中复制而来
@@ -89,6 +92,7 @@
 
 
 import argparse
+import pandas as pd
 import os,sys,re
 import shutil
 
@@ -104,16 +108,17 @@ class Base_message(object):
     属于第一大类
     '''
     def __init__(self, Event_root_path_, model_name_: str, size_: int, min_num_: int, max_num_: int, info_name_list_: list, 
-                        main_path_: str = sys.path[0], data_path_: str = 'gnmssm/', project_prepare_path_: str = 'Project_prepare/', process_name_: str = '2tau8c',
+                        main_path_: str = sys.path[0], data_path_: str = 'MC_data/', project_prepare_path_: str = 'Project_prepare/', process_name_: str = 'process',
                         comm_ = MPI.COMM_WORLD, rank_ = comm.Get_rank(), ranks_ = comm.Get_size()) -> None:
 
         self.main_path = main_path_
         self.data_path = os.path.join(self.main_path, data_path_)
+        self.data_df = pd.read_csv(os.path.join(self.data_path, 'ck_input.csv'))
         self.Event_root_path = Event_root_path_
         self.project_prepare_path = os.path.join(self.main_path, project_prepare_path_)
         self.model_name = model_name_
         self.size = size_
-        self.all_generate_num = list(range(min_num_, max_num_+1))
+        self.all_generate_num = list(range(min_num_, max_num_))
         self.comm = comm_
         self.rank = rank_
         self.ranks = ranks_
@@ -287,26 +292,6 @@ class Project_prepare(object):
                 shutil.copy2('gnmssm_smusmu.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
                 os.chdir(self.base_message.main_path)
 
-    def Prepare_Madgraph_inputfile(self) -> None:
-        '''
-        准备Madgraph输入文件
-        '''
-        for i in range(self.base_message.size):
-            if self.base_message.rank == i:
-                shutil.copytree(os.path.join(self.base_message.project_prepare_path, 'proc/'), os.path.join(self.base_message.Event_template_paths[i], 'proc/'))
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_chi'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_card.dat'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madevent_interface.py'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[i])
-                
-                os.chdir(self.base_message.Event_paths[i])
-                os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
-                os.chdir(self.base_message.main_path)
-
     def sel_ck():
         pass
 
@@ -316,19 +301,23 @@ class Process_prepare(object):
     单个进程开始前的准备，包括获得generate_numbers,清洗单个进程内的旧文件,生成对应新文件
     属于第二大类
     '''
-    def __init__(self, base_message_: Base_message) -> None:
+    def __init__(self, base_message_: Base_message, process_num_: int) -> None:
+        '''
+        process_num是进程的编号
+        '''
         self.base_message = base_message_
+        self.process_num = process_num_
+        self.generate_numbers = self.base_message.generate_numbers_lst[self.process_num]
 
     def refresh_ck_r(self) -> None:
         '''
         刷新ck_r.txt文件。ck_r.txt是存放CheckMATE结果的文件，每次运行程序时，都会将ck_r.txt清空，然后将结果写入ck_r.txt。
         '''
-        for i in range(self.base_message.size):
-            os.chdir(self.base_message.after_ck_paths[i])                                               # 切换到ck结果存放路径
-            os.system('rm -rf after_ck/ck_r.txt')                                                       # 删除旧的ck结果文件
+        os.chdir(self.base_message.after_ck_paths[self.process_num])                                               # 切换到ck结果存放路径
+        os.system('rm -rf after_ck/ck_r.txt')                                                       # 删除旧的ck结果文件
         #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
-            with open(os.path.join(self.base_message.after_ck_paths[i], 'ck_r.txt'), 'w') as ck_r:
-                ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
+        with open(os.path.join(self.base_message.after_ck_paths[self.process_num], 'ck_r.txt'), 'w') as ck_r:
+            ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
 
     def write_list_to_file(self, list, file) -> None:
         '''
@@ -343,8 +332,71 @@ class Process_prepare(object):
         '''
         刷新GridData.txt文件。这里存放着最终需要的所有数据。
         '''
-        shutil.rmtree(os.path.join(self.base_message.Results_paths, 'GridData.txt'))
-        all_info_name = self.info_name_list + ["robs", "rexp", "robscons", "rexpcons"]                          # 将所有信息名称和ck结果名称添加到一个列表中
-        self.write_list_to_file(all_info_name,os.path.join(self.base_message.Results_paths, 'GridData.txt'))    # 将信息名称写入结果文件
+        all_info_name = self.info_name_list + ["robs", "rexp", "robscons", "rexpcons"]                              # 将所有信息名称和ck结果名称添加到一个列表中
+        shutil.rmtree(os.path.join(self.base_message.Results_paths[self.process_num], 'GridData.txt'))
+        self.write_list_to_file(all_info_name,os.path.join(self.base_message.Results_paths[self.process_num], 'GridData.txt')) # 将信息名称写入结果文件
 
+    def Prepare_Madgraph_inputfile(self) -> None:
+        '''
+        准备Madgraph输入文件
+        '''
+        shutil.copytree(os.path.join(self.base_message.project_prepare_path, 'proc/'), os.path.join(self.base_message.Event_template_paths[self.process_num], 'proc/'))
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_chi'), self.base_message.Event_template_paths[self.process_num])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[self.process_num])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_card.dat'), self.base_message.Event_template_paths[self.process_num])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[self.process_num])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[self.process_num])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madevent_interface.py'), self.base_message.Event_template_paths[self.process_num])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[self.process_num])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[self.process_num])
+                
+        os.chdir(self.base_message.Event_paths[self.process_num])
+        os.system(os.path.join(self.base_message.Madgraph_paths[self.process_num], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
+        os.chdir(self.base_message.main_path)
     
+class Support_subprocess(object):
+    '''
+    用于准备和收尾各个子进程的类，在generate_number确定后，也就是要计算的参数点确定后才运行，因此属于第三大类
+    '''
+    def __init__(self, process_prepare_: Process_prepare, generate_number_: int) -> None:
+        self.process_prepare = process_prepare_
+        self.generate_number = generate_number_
+
+    def prepare_MadGraph(self) -> None:
+        '''
+        准备MadGraph的param_card.dat输入文件以及proc_chi输入文件
+        '''
+        def pre_generate(self) -> None:
+            '''
+            修改自@张迪的代码，用于准备MadGraph的param_card.dat输入文件以及proc_chi输入文件。proc_chi是generate EW过程文件的输入文件 
+            param_card.dat文件来自于一个Spectrum文件的修改。
+            如果是NMSSM模型，proc_chi来源于MadGraph_path/proc/proc_n*文件，其中n*是neutralino*，因为需要判断n*中哪一个是siglino为主，从而选择不同的proc。
+            MSSM模型没有siglino，所以不需要判断n*是不是siglino为主。
+            '''
+            data = pd.read_csv(os.path.join(self.base_message.data_path, 'ck_input.csv'))                           # 读取ck_input.csv文件
+            Index = data['Index'].iloc[self.generate_number]                                                        # 获取Spectrum的Index
+            with open("{}/muonSPhenoSPC_1/SPhenoSPC_{}.txt".format(self._data_path, str(Index)), 'r') as f1:        # 读取Spectrum文件
+                with open("{}/../Madgraph/param_card.dat".format(self._Support_path), 'w') as f2:                   # 写入param_card.dat文件
+                    f2.write(f1.read())
+
+            ## 注意 !!!!  以下代码用于获得proc_chi文件，在未来的工作中判断条件有可能会被更改。  !!!!
+            if self._model_name == 'MSSM':
+                os.system("cp {}/../Madgraph/proc_mssm {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+            elif self._model_name == 'NMSSM':
+                if max(pow(data['N11'].iloc[self.generate_number], 2), pow(data['N12'].iloc[self.generate_number], 2), (pow(data['N13'].iloc[self.generate_number], 2) + pow(data['N14'].iloc[self.generate_number], 2)), pow(data['N15'].iloc[self.generate_number], 2)) == pow(data['N15'].iloc[self.generate_number], 2):  
+                    os.system("cp {}/../Madgraph/proc/proc_n1 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N21'].iloc[self.generate_number], 2), pow(data['N22'].iloc[self.generate_number], 2), (pow(data['N23'].iloc[self.generate_number], 2) + pow(data['N24'].iloc[self.generate_number], 2)), pow(data['N25'].iloc[self.generate_number], 2)) == pow(data['N25'].iloc[self.generate_number], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n2 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N31'].iloc[self.generate_number], 2), pow(data['N32'].iloc[self.generate_number], 2), (pow(data['N33'].iloc[self.generate_number], 2) + pow(data['N34'].iloc[self.generate_number], 2)), pow(data['N35'].iloc[self.generate_number], 2)) == pow(data['N35'].iloc[self.generate_number], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n3 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N41'].iloc[self.generate_number], 2), pow(data['N42'].iloc[self.generate_number], 2), (pow(data['N43'].iloc[self.generate_number], 2) + pow(data['N44'].iloc[self.generate_number], 2)), pow(data['N45'].iloc[self.generate_number], 2)) == pow(data['N45'].iloc[self.generate_number], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n4 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                if max(pow(data['N51'].iloc[self.generate_number], 2), pow(data['N52'].iloc[self.generate_number], 2), (pow(data['N53'].iloc[self.generate_number], 2) + pow(data['N54'].iloc[self.generate_number], 2)), pow(data['N55'].iloc[self.generate_number], 2)) == pow(data['N55'].iloc[self.generate_number], 2):
+                    os.system("cp {}/../Madgraph/proc/proc_n5 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+
+        os.chdir(self._Support_path)
+        os.system('rm -rf ../Madgraph/param_card.dat')                              # 删除原有的param_card.dat文件
+        os.system('rm -rf ../Madgraph/proc_chi')                                    # 删除原有的proc_chi文件
+        pre_generate(self)
+        os.chdir(self._main_path)                                                   # 回到主目录
+
