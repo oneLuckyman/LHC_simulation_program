@@ -10,16 +10,11 @@
         第二大类：应用于项目中每个进程的类，一旦一个进程开始就不再变化的数据和方法，或者说generate_numbers一旦确定就不再变化的类
         第三大类：应用于每个进程的每个循环的类，一旦一个循环开始就不再变化的数据和方法，或者说generate_number一旦确定就不再变化的类
 
-    下面是文件结构的一个例子，暂时使用的是当前各服务器正在使用的名称
     起始于根目录级的主要文件结构：
         MC_data/:                           # 用于存放所有的数据文件，原gnmssm文件夹
             ck_input.csv                        # 存放所有Checkmate可能的输入数据的文件
-            muonSPhenoSPC/                      # 存放所有smodels输入谱的文件夹
             muonSPhenoSPC_1/                    # 存放所有SPheno输出谱的文件夹
             InputsForProspino/                  # 存放所有Prospino输入谱的数据文件
-            smodels/                            # 存放所有smodels输出数据的文件夹
-                h1/                                 # 收集不同批次smodels数据的子文件夹
-                h2/                                 # 同上
             slhaReaderOutPut.csv                # 存放所有SPheno输出数据的文件
             ck/                                 # 存放Checkmate输出数据的文件夹
                 h1/                                 # 收集不同批次Checkmate数据的子文件夹
@@ -32,16 +27,13 @@
             installP8                           # 安装Pythia8的脚本
             madevent_interface.py               # madevent的接口文件
             pythia8_card.dat                    # Pythia8的配置文件
-
-            # 需要修改
-
             proc/                               # 存放generate events脚本的文件夹
                 proc_n1                             # generate events的脚本
                 proc_n2                             # generate events的脚本
                 proc_n3                             # generate events的脚本
                 proc_n4                             # generate events的脚本
                 proc_n5                             # generate events的脚本
-            proc_chi                            # generate events的脚本
+                proc_mssm                           # generate events的脚本
             proc_smusmu                         # generate events的脚本
             run_card.dat                        # 事例模拟所需要的run_card.dat模板文件
             run_chi.dat                         # 事例模拟所需要的run_card.dat模板文件
@@ -88,6 +80,9 @@
         2022年4月25日：Project_prepare类基本写完了
         2022年4月26日：编写了generate_number相关的方法
         2022年4月27日：编写了Process_prepare类
+        2022年4月28日：添加了Support_subprocess类，编写了pre_generate方法
+        2022年4月29日：修改了一些文件结构
+        2022年5月1日：进一步修改了文件结构中不合理的部分
 '''
 
 
@@ -344,7 +339,6 @@ class Process_prepare(object):
         shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_chi'), self.base_message.Event_template_paths[self.process_num])
         shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[self.process_num])
         shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_card.dat'), self.base_message.Event_template_paths[self.process_num])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[self.process_num])
         shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[self.process_num])
         shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madevent_interface.py'), self.base_message.Event_template_paths[self.process_num])
         shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[self.process_num])
