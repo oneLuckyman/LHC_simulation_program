@@ -359,7 +359,7 @@ class MadGraph(object):
         os.chdir(self._Event_path)
         if self._mg5_category == 'EW':
             os.system('rm -rf {}'.format(self._mg5_name))                                                                   # 删除上一次生成的文件夹
-            os.system('{0}/MG5_aMC_v2_6_4/bin/mg5_aMC {0}/proc_chi'.format(self._MadGraph_path))                            # 启动MadGraph中生成相互作用过程的程序，产生“过程”文件，对应于mg5中的generate命令。这里的proc_chi是上一步生成的文件，如果需要改动这个文件的名字应该在上一步中改动。
+            os.system('{0}/MG5_aMC_v2_6_4/bin/mg5_aMC proc_chi'.format(self._MadGraph_path))                                # 启动MadGraph中生成相互作用过程的程序，产生“过程”文件，对应于mg5中的generate命令。这里的proc_chi是上一步生成的文件，如果需要改动这个文件的名字应该在上一步中改动。
         elif self._mg5_category == 'SL':
             os.system('rm -rf {0}/RunWeb {0}/index.html {0}/crossx.html {0}/HTML/* {0}/Events/*'.format(self._mg5_name))    # 删除上一次生成的文件，与EW不同的是，为了节省时间，SL的过程文件在运行了prepare.py之后已经生成过一次，因此只删除“过程”文件夹中必要的部分即可。
         os.system('cp param_card.dat pythia8_card.dat {0}/Cards/'.format(self._mg5_name))                                   # 将param_card.dat和pythia8_card.dat复制到mg5_name/Cards/下。
