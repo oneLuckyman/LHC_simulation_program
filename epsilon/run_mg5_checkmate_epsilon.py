@@ -86,7 +86,7 @@ class Prepare_program(object):
         '''
         os.chdir(self._result_path)                                                             # 切换到结果存放路径
         os.system('rm -rf GridData.txt')                                                        # 删除旧的结果文件
-        all_info_name = self._info_name_list + ["robs", "rexp", "robscons", "rexpcons"]         # 将所有信息名称和ck结果名称添加到一个列表中
+        all_info_name = self._info_name_list + ['r_smodels', 'cs13chi_in', 'cs13smu_pb', 'cs13chi_pb', "robs", "rexp", "robscons", "rexpcons"]         # 将所有信息名称和ck结果名称添加到一个列表中
         self.write_list_to_file(all_info_name,'GridData.txt')                                   # 将信息名称写入结果文件
         os.chdir(self._main_path)                                                               # 切换到主目录
  
@@ -175,10 +175,10 @@ class Prepare_subprocess(object):
 
         os.chdir(self._Support_path)
         os.system('rm -rf ck_input.dat')                                                                                # 删除旧的ck_input.dat文件
-        Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb = ck_input(self)
+        Index, self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb = ck_input(self)
         with open('ck_input.dat', 'w') as ck_input_file:
             ck_input_file.write("Index\tr_smodels\tcs13chi_in\tcs13smu_pb\tcs13chi_pb\n")                               # 写入ck_input.dat文件
-            ck_input_file.write("{}\t{}\t{}\t{}\t{}\n".format(Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb))    # 写入ck_input.dat文件
+            ck_input_file.write("{}\t{}\t{}\t{}\t{}\n".format(Index, self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb))    # 写入ck_input.dat文件
         os.chdir(self._main_path)                                                                                       # 返回主目录
 
     def remove_old_CM_result(self) -> None:
@@ -266,7 +266,7 @@ class Prepare_subprocess(object):
         os.chdir(self._result_path)                                                             # 切换到结果存放路径
         data_df = pd.read_csv("{}/ck_input.csv".format(self._data_path))                        # 读取ck_input.csv文件
         info_list = list(data_df[self._info_name_list].iloc[self._generate_number - 1])         # 获取该参数点的信息
-        result_list = info_list + [self.robs, self.rexp, self.robscons, self.rexpcons]          # 将该参数点的信息和ck结果添加到result_list
+        result_list = info_list + [self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb, self.robs, self.rexp, self.robscons, self.rexpcons]          # 将该参数点的信息和ck结果添加到result_list
         write_list_to_file(result_list, 'GridData.txt')                                         # 将result_list写入GridData.txt文件
         os.chdir(self._main_path)                                                               # 切换到主路径
         
