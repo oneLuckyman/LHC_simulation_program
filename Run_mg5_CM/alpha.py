@@ -35,7 +35,6 @@
                 proc_n5                             # generate events的脚本
                 proc_mssm                           # generate events的脚本
             proc_smusmu                         # generate events的脚本
-            run_card.dat                        # 事例模拟所需要的run_card.dat模板文件
             run_chi.dat                         # 事例模拟所需要的run_card.dat模板文件
             run_smu.dat                         # 事例模拟所需要的run_card.dat模板文件
             gnmssm_chi.dat                      # checkmate输入模板文件
@@ -69,7 +68,6 @@
                     proc_n5                             # generate events的脚本
                 proc_chi                            # generate events的脚本
                 proc_smusmu                         # generate events的脚本
-                run_card.dat                        # 事例模拟所需要的run_card.dat模板文件
                 run_chi.dat                         # 事例模拟所需要的run_card.dat模板文件
                 run_smu.dat                         # 事例模拟所需要的run_card.dat模板文件
 
@@ -121,7 +119,7 @@ class Base_message(object):
         self.process_name = process_name_
         self.processes = self.get_process_name()
         self.generate_numbers_lst = self.get_generate_numbers_lst()
-        self.process_paths = self.get_process_path()
+        self.process_paths = self.get_process_paths()
         self.Madgraph_paths = self.get_Madgraph_paths()
         self.CheckMATE_paths = self.get_CheckMATE_paths()
         self.Results_paths = self.get_Results_paths()
@@ -138,7 +136,7 @@ class Base_message(object):
             process_names.append(self.process_name + '_' + str(i))
         return process_names
     
-    def get_process_path(self) -> list:
+    def get_process_paths(self) -> list:
         '''
         获得所有进程文件夹的路径
         '''
@@ -234,25 +232,24 @@ class Project_prepare(object):
     def __init__(self, base_message_: Base_message) -> None:
         self.base_message = base_message_
 
-    def mkdirs(self) -> None:
+    def mkdirs(self, i: int) -> None:
         '''
         建立项目所需要的的文件结构
         '''
-        for i in range(self.base_message.size):
-            if not os.path.exists(self.base_message.process_paths[i]):
-                os.makedirs(self.base_message.process_paths[i])
-            if not os.path.exists(self.base_message.Madgraph_paths[i]):
-                os.makedirs(self.base_message.Madgraph_paths[i])
-            if not os.path.exists(self.base_message.CheckMATE_paths[i]):
-                os.makedirs(self.base_message.CheckMATE_paths[i])
-            if not os.path.exists(self.base_message.Results_paths[i]):
-                os.makedirs(self.base_message.Results_paths[i])
-            if not os.path.exists(self.base_message.after_ck_paths[i]):
-                os.makedirs(self.base_message.after_ck_paths[i])
-            if not os.path.exists(self.base_message.Event_paths[i]):
-                os.makedirs(self.base_message.Event_paths[i])
-            if not os.path.exists(self.base_message.Event_template_paths[i]):
-                os.makedirs(self.base_message.Event_template_paths[i])
+        if not os.path.exists(self.base_message.process_paths[i]):
+            os.mkdir(self.base_message.process_paths[i])
+        if not os.path.exists(self.base_message.Madgraph_paths[i]):
+            os.mkdir(self.base_message.Madgraph_paths[i])
+        if not os.path.exists(self.base_message.CheckMATE_paths[i]):
+            os.mkdir(self.base_message.CheckMATE_paths[i])
+        if not os.path.exists(self.base_message.Results_paths[i]):
+            os.mkdir(self.base_message.Results_paths[i])
+        if not os.path.exists(self.base_message.after_ck_paths[i]):
+            os.mkdir(self.base_message.after_ck_paths[i])
+        if not os.path.exists(self.base_message.Event_paths[i]):
+            os.mkdir(self.base_message.Event_paths[i])
+        if not os.path.exists(self.base_message.Event_template_paths[i]):
+            os.mkdir(self.base_message.Event_template_paths[i])
 
     def install_Madgraph(self) -> None:
         '''
@@ -266,6 +263,18 @@ class Project_prepare(object):
                 os.system('rm -rf MG5_aMC_v2_6_4.tar.gz')
                 os.chdir(self.base_message.project_prepare_path)
                 os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/mg5_aMC installP8'))
+                os.chdir(self.base_message.main_path)
+
+                shutil.copytree(os.path.join(self.base_message.project_prepare_path, 'proc/'), os.path.join(self.base_message.Event_template_paths[i], 'proc/'))
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madssevent_interface.py'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[i])
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[i])
+                
+                os.chdir(self.base_message.Event_paths[i])
+                os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
                 os.chdir(self.base_message.main_path)
 
     def install_CheckMATE(self) -> None:
@@ -282,10 +291,12 @@ class Project_prepare(object):
                 # 配置环境如果发生改变需要修改下面这一行中的路径
                 os.system("./configure --with-rootsys=/opt/root-6.18.04/installdir --with-delphes=/opt/delphes_for_CheckMATE --with-pythia=/opt/pythia8245 --with-hepmc=/opt/HepMC-2.06.11")
                 os.system('make -j 20')
+
                 os.chdir(self.base_message.project_prepare_path)
                 shutil.copy2('gnmssm_chi.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
                 shutil.copy2('gnmssm_smusmu.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
                 os.chdir(self.base_message.main_path)
+
 
     def sel_ck():
         pass
@@ -331,22 +342,7 @@ class Process_prepare(object):
         shutil.rmtree(os.path.join(self.base_message.Results_paths[self.process_num], 'GridData.txt'))
         self.write_list_to_file(all_info_name,os.path.join(self.base_message.Results_paths[self.process_num], 'GridData.txt')) # 将信息名称写入结果文件
 
-    def Prepare_Madgraph_inputfile(self) -> None:
-        '''
-        准备Madgraph输入文件
-        '''
-        shutil.copytree(os.path.join(self.base_message.project_prepare_path, 'proc/'), os.path.join(self.base_message.Event_template_paths[self.process_num], 'proc/'))
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_chi'), self.base_message.Event_template_paths[self.process_num])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[self.process_num])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_card.dat'), self.base_message.Event_template_paths[self.process_num])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[self.process_num])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madevent_interface.py'), self.base_message.Event_template_paths[self.process_num])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[self.process_num])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[self.process_num])
-                
-        os.chdir(self.base_message.Event_paths[self.process_num])
-        os.system(os.path.join(self.base_message.Madgraph_paths[self.process_num], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
-        os.chdir(self.base_message.main_path)
+
     
 class Support_subprocess(object):
     '''
@@ -360,14 +356,13 @@ class Support_subprocess(object):
         '''
         准备MadGraph的param_card.dat输入文件以及proc_chi输入文件
         '''
-        def pre_generate(self) -> None:
+        def pre_generate(self, data = self.process_prepare.base_message.data_df) -> None:
             '''
             修改自@张迪的代码，用于准备MadGraph的param_card.dat输入文件以及proc_chi输入文件。proc_chi是generate EW过程文件的输入文件 
             param_card.dat文件来自于一个Spectrum文件的修改。
             如果是NMSSM模型，proc_chi来源于MadGraph_path/proc/proc_n*文件，其中n*是neutralino*，因为需要判断n*中哪一个是siglino为主，从而选择不同的proc。
             MSSM模型没有siglino，所以不需要判断n*是不是siglino为主。
             '''
-            data = pd.read_csv(os.path.join(self.base_message.data_path, 'ck_input.csv'))                           # 读取ck_input.csv文件
             Index = data['Index'].iloc[self.generate_number]                                                        # 获取Spectrum的Index
             with open("{}/muonSPhenoSPC_1/SPhenoSPC_{}.txt".format(self._data_path, str(Index)), 'r') as f1:        # 读取Spectrum文件
                 with open("{}/../Madgraph/param_card.dat".format(self._Support_path), 'w') as f2:                   # 写入param_card.dat文件
