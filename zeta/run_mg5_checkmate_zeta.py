@@ -369,10 +369,10 @@ class MadGraph(object):
         os.chdir(self._main_path)                                                                                           # 返回主目录。
 
     def remove_result(self) -> None:
-        '''
+        ''' 
         删除这一个MG5生成的结果
         '''
-        os.chdir(self._MadGraph_path)
+        os.chdir(self._Event_path)
         os.remove(os.path.join(self._mg5_name, 'Events', 'run_01', 'tag_1_pythia8_events.hepmc'))                            # 删除这一个MG5生成的结果
         os.chdir(self._main_path)
     
