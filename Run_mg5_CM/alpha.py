@@ -85,6 +85,7 @@
 
 
 import argparse
+import numpy as np
 import pandas as pd
 import os,sys,re
 import shutil
@@ -100,7 +101,8 @@ class Base_message(object):
     这个类包含了所有的基本信息
     属于第一大类
     '''
-    def __init__(self, Event_root_path_, model_name_: str, size_: int, min_num_: int, max_num_: int, info_name_list_: list, 
+    def __init__(self, Event_root_path_, model_name_: str, size_: int, min_num_: int, max_num_: int, info_name_list_: list,
+                        Madgraph_inputs: list, Checkmate_inputs: list,  
                         main_path_: str = sys.path[0], data_path_: str = 'MC_data/', project_prepare_path_: str = 'Project_prepare/', process_name_: str = 'process',
                         comm_ = MPI.COMM_WORLD, rank_ = comm.Get_rank(), ranks_ = comm.Get_size()) -> None:
 
@@ -116,6 +118,8 @@ class Base_message(object):
         self.rank = rank_
         self.ranks = ranks_
         self.info_name_list = info_name_list_
+        self.Madgraph_inputs = Madgraph_inputs
+        self.Checkmate_inputs = Checkmate_inputs
         self.process_name = process_name_
         self.processes = self.get_process_name()
         self.generate_numbers_lst = self.get_generate_numbers_lst()
@@ -150,9 +154,8 @@ class Base_message(object):
         将一个list分成数个list
         分配每个进程要计算的generate_numbers
         '''
-        lst = self.all_generate_num
-        n = (len(lst)//self.size) + 1
-        return [lst[i:i + n] for i in range(0, len(lst), n)]
+        generate_numbers_lst = np.array_split(self.all_generate_num, self.size)
+        return generate_numbers_lst
 
     def get_Madgraph_paths(self) -> list:
         '''
@@ -251,54 +254,54 @@ class Project_prepare(object):
         if not os.path.exists(self.base_message.Event_template_paths[i]):
             os.mkdir(self.base_message.Event_template_paths[i])
 
-    def install_Madgraph(self) -> None:
+    def install_Madgraph(self, i: int) -> None:
         '''
         安装Madgraph
         '''
-        for i in range(self.base_message.size):
-            if self.base_message.rank == i:
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'MG5_aMC_v2_6_4.tar.gz'), self.base_message.Madgraph_paths[i])
-                os.chdir(self.base_message.Madgraph_paths[i])
-                os.system('tar -zxvf MG5_aMC_v2_6_4.tar.gz')
-                os.system('rm -rf MG5_aMC_v2_6_4.tar.gz')
-                os.chdir(self.base_message.project_prepare_path)
-                os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/mg5_aMC installP8'))
-                os.chdir(self.base_message.main_path)
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'MG5_aMC_v2_6_4.tar.gz'), self.base_message.Madgraph_paths[i])
+        os.chdir(self.base_message.Madgraph_paths[i])
+        os.system('tar -zxvf MG5_aMC_v2_6_4.tar.gz')
+        os.system('rm -rf MG5_aMC_v2_6_4.tar.gz')
+        os.chdir(self.base_message.project_prepare_path)
+        os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/mg5_aMC installP8'))
+        os.chdir(self.base_message.main_path)
 
-                shutil.copytree(os.path.join(self.base_message.project_prepare_path, 'proc/'), os.path.join(self.base_message.Event_template_paths[i], 'proc/'))
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madssevent_interface.py'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[i])
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[i])
+        for Madgraph_input in self.base_message.Madgraph_inputs:
+            if os.path.isdir(os.path.join(self.base_message.project_prepare_path, Madgraph_input)):
+                shutil.copytree(os.path.join(self.base_message.project_prepare_path, Madgraph_input), os.path.join(self.base_message.Event_template_paths[i], Madgraph_input))
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[i])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[i])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[i])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madssevent_interface.py'), self.base_message.Event_template_paths[i])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[i])
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[i])
                 
-                os.chdir(self.base_message.Event_paths[i])
-                os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
-                os.chdir(self.base_message.main_path)
+        os.chdir(self.base_message.Event_paths[i])
+        os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
+        os.chdir(self.base_message.main_path)
 
-    def install_CheckMATE(self) -> None:
+    def install_CheckMATE(self, i: int) -> None:
         '''
         安装CheckMATE，并把CheckMATE的输入文件复制到CheckMATE的运行目录下
         '''
-        for i in range(self.base_message.size):
-            if self.base_message.rank == i:
-                shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'CM_v2_26.tar.gz'), self.base_message.CheckMATE_paths[i])
-                os.chdir(self.base_message.CheckMATE_paths[i])
-                os.system('tar -zxvf CM_v2_26.tar.gz')
-                os.system('rm -rf CM_v2_26.tar.gz')
-                os.chdir('CM_v2_26')
-                # 配置环境如果发生改变需要修改下面这一行中的路径
-                os.system("./configure --with-rootsys=/opt/root-6.18.04/installdir --with-delphes=/opt/delphes_for_CheckMATE --with-pythia=/opt/pythia8245 --with-hepmc=/opt/HepMC-2.06.11")
-                os.system('make -j 20')
+        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'CM_v2_26.tar.gz'), self.base_message.CheckMATE_paths[i])
+        os.chdir(self.base_message.CheckMATE_paths[i])
+        os.system('tar -zxvf CM_v2_26.tar.gz')
+        os.system('rm -rf CM_v2_26.tar.gz')
+        os.chdir('CM_v2_26')
+        # 配置环境如果发生改变需要修改下面这一行中的路径
+        os.system("./configure --with-rootsys=/opt/root-6.18.04/installdir --with-delphes=/opt/delphes_for_CheckMATE --with-pythia=/opt/pythia8245 --with-hepmc=/opt/HepMC-2.06.11")
+        os.system('make -j 20')
 
-                os.chdir(self.base_message.project_prepare_path)
-                shutil.copy2('gnmssm_chi.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
-                shutil.copy2('gnmssm_smusmu.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
-                os.chdir(self.base_message.main_path)
+        os.chdir(self.base_message.project_prepare_path)
+        # 这里要改
+        shutil.copy2('gnmssm_chi.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
+        shutil.copy2('gnmssm_smusmu.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
+        # 这里要改
+        os.chdir(self.base_message.main_path)
 
 
-    def sel_ck():
+    def main():
         pass
 
 
