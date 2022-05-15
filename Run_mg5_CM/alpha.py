@@ -269,12 +269,8 @@ class Project_prepare(object):
         for Madgraph_input in self.base_message.Madgraph_inputs:
             if os.path.isdir(os.path.join(self.base_message.project_prepare_path, Madgraph_input)):
                 shutil.copytree(os.path.join(self.base_message.project_prepare_path, Madgraph_input), os.path.join(self.base_message.Event_template_paths[i], Madgraph_input))
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'proc_smusmu'), self.base_message.Event_template_paths[i])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_chi.dat'), self.base_message.Event_template_paths[i])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'run_smu.dat'), self.base_message.Event_template_paths[i])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'madssevent_interface.py'), self.base_message.Event_template_paths[i])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'mg5_configuration.txt'), self.base_message.Event_template_paths[i])
-        shutil.copy2(os.path.join(self.base_message.project_prepare_path, 'pythia8_card.dat'), self.base_message.Event_template_paths[i])
+            elif os.path.isfile(os.path.join(self.base_message.project_prepare_path, Madgraph_input)):
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, Madgraph_input), self.base_message.Event_template_paths[i]) 
                 
         os.chdir(self.base_message.Event_paths[i])
         os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/') + 'mg5_aMC proc_smusmu')
@@ -294,15 +290,23 @@ class Project_prepare(object):
         os.system('make -j 20')
 
         os.chdir(self.base_message.project_prepare_path)
-        # 这里要改
-        shutil.copy2('gnmssm_chi.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
-        shutil.copy2('gnmssm_smusmu.dat',os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
-        # 这里要改
+        for CheckMATE_input in self.base_message.CheckMATE_inputs:
+            if os.path.isdir(os.path.join(self.base_message.project_prepare_path, CheckMATE_input)):
+                shutil.copytree(os.path.join(self.base_message.project_prepare_path, CheckMATE_input), os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin', CheckMATE_input))
+            elif os.path.isfile(os.path.join(self.base_message.project_prepare_path, CheckMATE_input)):
+                shutil.copy2(os.path.join(self.base_message.project_prepare_path, CheckMATE_input), os.path.join(self.base_message.CheckMATE_paths[i],'CM_v2_26','bin'))
         os.chdir(self.base_message.main_path)
 
 
-    def main():
-        pass
+    def main(self) -> None:
+        '''
+        多核运行项目准备类
+        '''
+        for i in range(self.base_message.size):
+            if self.rank == i:
+                self.mkdirs(i)
+                self.install_Madgraph(i)
+                self.install_CheckMATE(i)
 
 
 class Process_prepare(object):
