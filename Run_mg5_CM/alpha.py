@@ -14,7 +14,6 @@
         MC_data/:                           # 用于存放所有的数据文件，原gnmssm文件夹
             ck_input.csv                        # 存放所有Checkmate可能的输入数据的文件
             muonSPhenoSPC_1/                    # 存放所有SPheno输出谱的文件夹
-            InputsForProspino/                  # 存放所有Prospino输入谱的数据文件
             slhaReaderOutPut.csv                # 存放所有SPheno输出数据的文件
             ck/                                 # 存放Checkmate输出数据的文件夹
                 h1/                                 # 收集不同批次Checkmate数据的子文件夹
