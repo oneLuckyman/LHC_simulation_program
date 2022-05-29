@@ -80,6 +80,8 @@
         2022年4月28日：添加了Support_subprocess类，编写了pre_generate方法
         2022年4月29日：修改了一些文件结构
         2022年5月1日：进一步修改了文件结构中不合理的部分
+        2022年5月：一个月以来修正了一些路径错误，改动很小所以没有写入开发日志中。
+        2022年5月29日：pre_generate中的错误已经全部修正
 '''
 
 
@@ -301,11 +303,11 @@ class Project_prepare(object):
         '''
         多核运行项目准备类
         '''
-        for i in range(self.base_message.size):
-            if self.rank == i:
-                self.mkdirs(i)
-                self.install_Madgraph(i)
-                self.install_CheckMATE(i)
+        for process_num in range(self.base_message.size):
+            if self.rank == process_num:
+                self.mkdirs(process_num)
+                self.install_Madgraph(process_num)
+                self.install_CheckMATE(process_num)
 
 
 class Process_prepare(object):
@@ -354,44 +356,45 @@ class Support_subprocess(object):
     '''
     用于准备和收尾各个子进程的类，在generate_number确定后，也就是要计算的参数点确定后才运行，因此属于第三大类
     '''
-    def __init__(self, process_prepare_: Process_prepare, generate_number_: int) -> None:
-        self.process_prepare = process_prepare_
+    def __init__(self, base_message_: Base_message, process_num_: int, generate_number_: int) -> None:
+        self.base_message = base_message_
+        self.process_num = process_num_
         self.generate_number = generate_number_
 
     def prepare_MadGraph(self) -> None:
         '''
         准备MadGraph的param_card.dat输入文件以及proc_chi输入文件
         '''
-        def pre_generate(self, data = self.process_prepare.base_message.data_df) -> None:
+        def pre_generate(self, data = self.base_message.data_df) -> None:
             '''
             修改自@张迪的代码，用于准备MadGraph的param_card.dat输入文件以及proc_chi输入文件。proc_chi是generate EW过程文件的输入文件 
             param_card.dat文件来自于一个Spectrum文件的修改。
             如果是NMSSM模型，proc_chi来源于MadGraph_path/proc/proc_n*文件，其中n*是neutralino*，因为需要判断n*中哪一个是siglino为主，从而选择不同的proc。
             MSSM模型没有siglino，所以不需要判断n*是不是siglino为主。
             '''
-            Index = data['Index'].iloc[self.generate_number]                                                        # 获取Spectrum的Index
-            with open("{}/muonSPhenoSPC_1/SPhenoSPC_{}.txt".format(self._data_path, str(Index)), 'r') as f1:        # 读取Spectrum文件
-                with open("{}/../Madgraph/param_card.dat".format(self._Support_path), 'w') as f2:                   # 写入param_card.dat文件
+            Index = data['Index'].iloc[self.generate_number]                                                                    # 获取Spectrum的Index
+            with open("{}/muonSPhenoSPC_1/SPhenoSPC_{}.txt".format(self.base_message.data_path, str(Index)), 'r') as f1:        # 读取Spectrum文件
+                with open("{}/../Madgraph/param_card.dat".format(self.base_message.Event_paths[self.process_num]), 'w') as f2:                               # 写入param_card.dat文件
                     f2.write(f1.read())
 
             ## 注意 !!!!  以下代码用于获得proc_chi文件，在未来的工作中判断条件有可能会被更改。  !!!!
             if self._model_name == 'MSSM':
-                os.system("cp {}/../Madgraph/proc_mssm {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                os.system("cp {0}/../Madgraph/proc_mssm {0}/../Madgraph/proc_chi".format(self.base_message.Event_paths[self.process_num]))
             elif self._model_name == 'NMSSM':
                 if max(pow(data['N11'].iloc[self.generate_number], 2), pow(data['N12'].iloc[self.generate_number], 2), (pow(data['N13'].iloc[self.generate_number], 2) + pow(data['N14'].iloc[self.generate_number], 2)), pow(data['N15'].iloc[self.generate_number], 2)) == pow(data['N15'].iloc[self.generate_number], 2):  
-                    os.system("cp {}/../Madgraph/proc/proc_n1 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                    os.system("cp {0}/../Madgraph/proc/proc_n1 {0}/../Madgraph/proc_chi".format(self.base_message.Event_paths[self.process_num]))
                 if max(pow(data['N21'].iloc[self.generate_number], 2), pow(data['N22'].iloc[self.generate_number], 2), (pow(data['N23'].iloc[self.generate_number], 2) + pow(data['N24'].iloc[self.generate_number], 2)), pow(data['N25'].iloc[self.generate_number], 2)) == pow(data['N25'].iloc[self.generate_number], 2):
-                    os.system("cp {}/../Madgraph/proc/proc_n2 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                    os.system("cp {0}/../Madgraph/proc/proc_n2 {0}/../Madgraph/proc_chi".format(self.base_message.Event_paths[self.process_num]))
                 if max(pow(data['N31'].iloc[self.generate_number], 2), pow(data['N32'].iloc[self.generate_number], 2), (pow(data['N33'].iloc[self.generate_number], 2) + pow(data['N34'].iloc[self.generate_number], 2)), pow(data['N35'].iloc[self.generate_number], 2)) == pow(data['N35'].iloc[self.generate_number], 2):
-                    os.system("cp {}/../Madgraph/proc/proc_n3 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                    os.system("cp {0}/../Madgraph/proc/proc_n3 {0}/../Madgraph/proc_chi".format(self.base_message.Event_paths[self.process_num]))
                 if max(pow(data['N41'].iloc[self.generate_number], 2), pow(data['N42'].iloc[self.generate_number], 2), (pow(data['N43'].iloc[self.generate_number], 2) + pow(data['N44'].iloc[self.generate_number], 2)), pow(data['N45'].iloc[self.generate_number], 2)) == pow(data['N45'].iloc[self.generate_number], 2):
-                    os.system("cp {}/../Madgraph/proc/proc_n4 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                    os.system("cp {0}/../Madgraph/proc/proc_n4 {0}/../Madgraph/proc_chi".format(self.base_message.Event_paths[self.process_num]))
                 if max(pow(data['N51'].iloc[self.generate_number], 2), pow(data['N52'].iloc[self.generate_number], 2), (pow(data['N53'].iloc[self.generate_number], 2) + pow(data['N54'].iloc[self.generate_number], 2)), pow(data['N55'].iloc[self.generate_number], 2)) == pow(data['N55'].iloc[self.generate_number], 2):
-                    os.system("cp {}/../Madgraph/proc/proc_n5 {}/../Madgraph/proc_chi".format(self._Support_path, self._Support_path))
+                    os.system("cp {0}/../Madgraph/proc/proc_n5 {0}/../Madgraph/proc_chi".format(self.base_message.Event_paths[self.process_num]))
 
-        os.chdir(self._Support_path)
+        os.chdir(self.base_message.Event_paths[self.process_num])
         os.system('rm -rf ../Madgraph/param_card.dat')                              # 删除原有的param_card.dat文件
         os.system('rm -rf ../Madgraph/proc_chi')                                    # 删除原有的proc_chi文件
         pre_generate(self)
-        os.chdir(self._main_path)                                                   # 回到主目录
+        os.chdir(self.base_message.main_path)                                       # 回到主目录
 
