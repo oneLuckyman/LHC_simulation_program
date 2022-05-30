@@ -82,6 +82,7 @@
         2022年5月1日：进一步修改了文件结构中不合理的部分
         2022年5月：一个月以来修正了一些路径错误，改动很小所以没有写入开发日志中。
         2022年5月29日：pre_generate中的错误已经全部修正
+        2022年5月30日：编写了Support_subprocess类中的prepare_CheckMATE方法
 '''
 
 
@@ -365,7 +366,7 @@ class Support_subprocess(object):
         '''
         准备MadGraph的param_card.dat输入文件以及proc_chi输入文件
         '''
-        def pre_generate(self, data = self.base_message.data_df) -> None:
+        def pre_generate(self, data: pd.DataFrame = self.base_message.data_df) -> None:
             '''
             修改自@张迪的代码，用于准备MadGraph的param_card.dat输入文件以及proc_chi输入文件。proc_chi是generate EW过程文件的输入文件 
             param_card.dat文件来自于一个Spectrum文件的修改。
@@ -397,4 +398,41 @@ class Support_subprocess(object):
         os.system('rm -rf ../Madgraph/proc_chi')                                    # 删除原有的proc_chi文件
         pre_generate(self)
         os.chdir(self.base_message.main_path)                                       # 回到主目录
+
+    def prepare_CheckMATE(self) -> None:
+        '''
+        修改自@张迪的代码，用于获得checkmate的输入数据，写进ck_input.dat里
+        其中一个重要的输入是截面数据，cs13chi_pb需要进行一系列判断再决定具体的数值
+        最终所有输入数据都被写入ck_input.dat文件中，供下一步使用
+        '''
+        def ck_input(self, data: pd.DataFrame  = self.base_message.data_df) -> float:
+            ## 注意 !!!!  以下代码用于获得checkmate的输入参数，在不同的工作中有可能会被更改  !!!!
+
+            Index = data['Index'].iloc[self.generate_number]                                                     # 获取Spectrum的Index
+            r_smodels = data['r_smodels'].iloc[self.generate_number]                                             # 获取Spectrum的r_smodels
+            cs13chi_pb = data['cs13chi_pb'].iloc[self.generate_number]                                           # 获取Spectrum的cs13chi_pb，该数字是EW的产生截面数据。在作为checkmate输入数值之前，该截面还需要进一步计算。
+            cs13smu_in = data['cs13smu_pb'].iloc[self.generate_number]                                           # 获取Spectrum的cs13smu_pb，该数字是SM的产生截面数据，是checkmate的重要输入数值。
+            if self._model_name == 'MSSM':
+                cs13chi_in = cs13chi_pb
+            elif self._model_name == 'NMSSM':
+                if max(pow(data['N11'].iloc[self.generate_number], 2), pow(data['N12'].iloc[self.generate_number], 2), (pow(data['N13'].iloc[self.generate_number], 2) + pow(data['N14'].iloc[self.generate_number], 2)), pow(data['N15'].iloc[self.generate_number], 2)) == pow(data['N15'].iloc[self.generate_number], 2):
+                    cs13chi_in = cs13chi_pb
+                if max(pow(data['N21'].iloc[self.generate_number], 2), pow(data['N22'].iloc[self.generate_number], 2), (pow(data['N23'].iloc[self.generate_number], 2) + pow(data['N24'].iloc[self.generate_number], 2)), pow(data['N25'].iloc[self.generate_number], 2)) == pow(data['N25'].iloc[self.generate_number], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn2_pb'].iloc[self.generate_number] + data['c1n2_pb'].iloc[self.generate_number] + data['c2barn2_pb'].iloc[self.generate_number] + data['c2n2_pb'].iloc[self.generate_number] + data['n2n2_pb'].iloc[self.generate_number] + data['n2n3_pb'].iloc[self.generate_number] + data['n2n4_pb'].iloc[self.generate_number] + data['n2n5_pb'].iloc[self.generate_number])
+                if max(pow(data['N31'].iloc[self.generate_number], 2), pow(data['N32'].iloc[self.generate_number], 2), (pow(data['N33'].iloc[self.generate_number], 2)+ pow(data['N34'].iloc[self.generate_number], 2)), pow(data['N35'].iloc[self.generate_number], 2)) == pow(data['N35'].iloc[self.generate_number], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn3_pb'].iloc[self.generate_number] + data['c1n3_pb'].iloc[self.generate_number] + data['c2barn3_pb'].iloc[self.generate_number] + data['c2n3_pb'].iloc[self.generate_number] + data['n3n3_pb'].iloc[self.generate_number] + data['n2n3_pb'].iloc[self.generate_number] + data['n3n4_pb'].iloc[self.generate_number] + data['n3n5_pb'].iloc[self.generate_number])
+                if max(pow(data['N41'].iloc[self.generate_number], 2), pow(data['N42'].iloc[self.generate_number], 2), (pow(data['N43'].iloc[self.generate_number], 2) + pow(data['N44'].iloc[self.generate_number], 2)), pow(data['N45'].iloc[self.generate_number], 2)) == pow(data['N45'].iloc[self.generate_number], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn4_pb'].iloc[self.generate_number] + data['c1n4_pb'].iloc[self.generate_number] + data['c2barn4_pb'].iloc[self.generate_number] + data['c2n4_pb'].iloc[self.generate_number] + data['n4n4_pb'].iloc[self.generate_number] + data['n2n4_pb'].iloc[self.generate_number] + data['n3n4_pb'].iloc[self.generate_number] + data['n4n5_pb'].iloc[self.generate_number])
+                if max(pow(data['N51'].iloc[self.generate_number], 2), pow(data['N52'].iloc[self.generate_number], 2), (pow(data['N53'].iloc[self.generate_number], 2) + pow(data['N54'].iloc[self.generate_number], 2)), pow(data['N55'].iloc[self.generate_number], 2)) == pow(data['N55'].iloc[self.generate_number], 2):
+                    cs13chi_in = cs13chi_pb - (data['c1barn5_pb'].iloc[self.generate_number] + data['c1n5_pb'].iloc[self.generate_number] + data['c2barn5_pb'].iloc[self.generate_number] + data['c2n5_pb'].iloc[self.generate_number] + data['n5n5_pb'].iloc[self.generate_number] + data['n2n5_pb'].iloc[self.generate_number] + data['n3n5_pb'].iloc[self.generate_number] + data['n4n5_pb'].iloc[self.generate_number])
+            return Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb
+
+        os.chdir(self.base_message.CheckMATE_paths[self.process_num])
+        os.system('rm -rf ck_input.dat')                                                                                # 删除旧的ck_input.dat文件
+        Index, self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb = ck_input(self)
+        with open('ck_input.dat', 'w') as ck_input_file:
+            ck_input_file.write("Index\tr_smodels\tcs13chi_in\tcs13smu_pb\tcs13chi_pb\n")                                                   # 写入ck_input.dat文件
+            ck_input_file.write("{}\t{}\t{}\t{}\t{}\n".format(Index, self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb))    # 写入ck_input.dat文件
+        os.chdir(self.base_message.main_path)                                                                                               # 返回主目录
+
 
