@@ -85,7 +85,7 @@ class Prepare_program(object):
         '''
         os.chdir(self._result_path)                                                             # 切换到结果存放路径
         os.system('rm -rf GridData.txt')                                                        # 删除旧的结果文件
-        all_info_name = self._info_name_list + ["robs", "rexp", "robscons", "rexpcons"]         # 将所有信息名称和ck结果名称添加到一个列表中
+        all_info_name = self._info_name_list + ['r_smodels', 'cs13chi_in', 'cs13smu_pb', 'cs13chi_pb', "robs", "rexp", "robscons", "rexpcons"]         # 将所有信息名称和ck结果名称添加到一个列表中
         self.write_list_to_file(all_info_name,'GridData.txt')                                   # 将信息名称写入结果文件
         os.chdir(self._main_path)                                                               # 切换到主目录
     
@@ -183,10 +183,10 @@ class Prepare_subprocess(object):
 
         os.chdir(self._Support_path)
         os.system('rm -rf ck_input.dat')                                                                                # 删除旧的ck_input.dat文件
-        Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb = ck_input(self)
+        Index, self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb = ck_input(self)
         with open('ck_input.dat', 'w') as ck_input_file:
             ck_input_file.write("Index\tr_smodels\tcs13chi_in\tcs13smu_pb\tcs13chi_pb\n")                               # 写入ck_input.dat文件
-            ck_input_file.write("{}\t{}\t{}\t{}\t{}\n".format(Index, r_smodels, cs13chi_in, cs13smu_in, cs13chi_pb))    # 写入ck_input.dat文件
+            ck_input_file.write("{}\t{}\t{}\t{}\t{}\n".format(Index, self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb))    # 写入ck_input.dat文件
         os.chdir(self._main_path)                                                                                       # 返回主目录
 
     def remove_old_CM_result(self) -> None:
@@ -274,7 +274,7 @@ class Prepare_subprocess(object):
         os.chdir(self._result_path)                                                             # 切换到结果存放路径
         data_df = pd.read_csv("{}/ck_input.csv".format(self._data_path))                        # 读取ck_input.csv文件
         info_list = list(data_df[self._info_name_list].iloc[self._generate_number - 1])         # 获取该参数点的信息
-        result_list = info_list + [self.robs, self.rexp, self.robscons, self.rexpcons]          # 将该参数点的信息和ck结果添加到result_list
+        result_list = info_list + [self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb, self.robs, self.rexp, self.robscons, self.rexpcons]          # 将该参数点的信息和ck结果添加到result_list
         write_list_to_file(result_list, 'GridData.txt')                                         # 将result_list写入GridData.txt文件
         os.chdir(self._main_path)                                                               # 切换到主路径
         
@@ -359,7 +359,7 @@ class MadGraph(object):
         os.chdir(self._Event_path)
         if self._mg5_category == 'EW':
             os.system('rm -rf {}'.format(self._mg5_name))                                                                   # 删除上一次生成的文件夹
-            os.system('{0}/MG5_aMC_v2_6_4/bin/mg5_aMC proc_chi'.format(self._MadGraph_path))                                # 启动MadGraph中生成相互作用过程的程序，产生“过程”文件，对应于mg5中的generate命令。这里的proc_chi是上一步生成的文件，如果需要改动这个文件的名字应该在上一步中改动。
+            os.system('{0}/MG5_aMC_v2_6_4/bin/mg5_aMC proc_chi'.format(self._MadGraph_path))                            # 启动MadGraph中生成相互作用过程的程序，产生“过程”文件，对应于mg5中的generate命令。这里的proc_chi是上一步生成的文件，如果需要改动这个文件的名字应该在上一步中改动。
         elif self._mg5_category == 'SL':
             os.system('rm -rf {0}/RunWeb {0}/index.html {0}/crossx.html {0}/HTML/* {0}/Events/*'.format(self._mg5_name))    # 删除上一次生成的文件，与EW不同的是，为了节省时间，SL的过程文件在运行了prepare.py之后已经生成过一次，因此只删除“过程”文件夹中必要的部分即可。
         os.system('cp param_card.dat pythia8_card.dat {0}/Cards/'.format(self._mg5_name))                                   # 将param_card.dat和pythia8_card.dat复制到mg5_name/Cards/下。
@@ -369,7 +369,7 @@ class MadGraph(object):
         os.chdir(self._main_path)                                                                                           # 返回主目录。
 
     def remove_result(self) -> None:
-        ''' 
+        '''
         删除这一个MG5生成的结果
         '''
         os.chdir(self._Event_path)
@@ -490,12 +490,12 @@ class CheckMATE(object):
             '''
             为Checkmate的输入文件指定event
             '''
-            CM_inputfile_path = os.path.join(self._CheckMate_path, './bin')                                             # 获取CheckMATE输入文件的路径。
-            os.chdir(CM_inputfile_path)                                                                                 # 切换到CheckMATE输入文件的路径下。
+            CM_inputfile_path = os.path.join(self._CheckMate_path, './bin')
+            os.chdir(CM_inputfile_path)
             P8_event_path = "Events/run_01/tag_1_pythia8_events.hepmc"
             with open(self._CM_input_name, mode = 'a') as ck_input_file:
-                ck_input_file.write("Events: " + os.path.join(self._Event_path, self._mg5_name, P8_event_path))         # 为CheckMATE的输入文件指定event路径。
-            os.chdir(self._main_path)                                                                                   # 返回主目录。
+                ck_input_file.write("Events: " + os.path.join(self._Event_path, self._mg5_name, P8_event_path))
+            os.chdir(self._main_path)
 
         get_XSect_number(self)                                                      # 从ck_input.dat中获取XSect。
         replace_Xsect(self)                                                         # 替换CheckMATE输入文件中的XSect。
@@ -527,15 +527,15 @@ if __name__ == '__main__':
         mg5_gnmssm_chi.mg5_Execute()
         CM_gnmssm_chi = CheckMATE('gnmssm_chi.dat', 'gnmssm_chi', 'cs13chi_in', 'ES_cs13chi')
         CM_gnmssm_chi.CM_Execute()
-        # mg5_gnmssm_chi.remove_result()
+        mg5_gnmssm_chi.remove_result()
 
         mg5_gnmssm_smusmu = MadGraph('gnmssm_smusmu', 'SL', 'run_smu.dat')
         mg5_gnmssm_smusmu.mg5_Execute()
         CM_gnmssm_smusmu = CheckMATE('gnmssm_smusmu.dat', 'gnmssm_smusmu', 'cs13smu_pb', 'ES_cs13smu')
         CM_gnmssm_smusmu.CM_Execute()
-        # mg5_gnmssm_smusmu.remove_result()
+        mg5_gnmssm_smusmu.remove_result()
 
         ## end
         prepare_subprocess.after_ck_Execute()
-        # prepare_subprocess.remove_old_CM_result()
+        prepare_subprocess.remove_old_CM_result()
         prepare_subprocess.collect_result()
