@@ -82,7 +82,7 @@
         2022年5月1日：进一步修改了文件结构中不合理的部分
         2022年5月：一个月以来修正了一些路径错误，改动很小所以没有写入开发日志中。
         2022年5月29日：pre_generate中的错误已经全部修正
-        2022年5月30日：编写了Support_subprocess类中的prepare_CheckMATE方法
+        2022年5月30日：编写了Support_subprocess类中的prepare_CheckMATE方法和remove_old_CM_result方法
 '''
 
 
@@ -434,5 +434,16 @@ class Support_subprocess(object):
             ck_input_file.write("Index\tr_smodels\tcs13chi_in\tcs13smu_pb\tcs13chi_pb\n")                                                   # 写入ck_input.dat文件
             ck_input_file.write("{}\t{}\t{}\t{}\t{}\n".format(Index, self.r_smodels, self.cs13chi_in, self.cs13smu_in, self.cs13chi_pb))    # 写入ck_input.dat文件
         os.chdir(self.base_message.main_path)                                                                                               # 返回主目录
+
+    def remove_old_CM_result(self) -> None:
+        '''
+        删除旧的CheckMate结果
+        '''
+        if os.path.exists(os.path.join(self.base_message.CheckMATE_paths[self.process_num], 'results/')):
+            shutil.rmtree(os.path.join(self.base_message.CheckMATE_paths[self.process_num], 'results/'))
+        else:
+            pass 
+
+
 
 
