@@ -21,31 +21,33 @@
 
         Project_prepare/:                    # 存放着所有用于准备一个新项目的文件
             CM_v2_26.tar.gz                     # Checkmate的tar包
-            MG5_aMC_v2_6_4.tar.gz               # MG5_aMC的tar包
+            MG5_aMC_v2_6_4.tar.gz               # MG5_aMC的tar包，用于安装MG5_aMC
+
             mg5_configuration.txt               # MG5_aMC的配置文件
             installP8                           # 安装Pythia8的脚本
             madevent_interface.py               # madevent的接口文件
             pythia8_card.dat                    # Pythia8的配置文件
-            proc/                               # 存放generate events脚本的文件夹
-                proc_n1                             # generate events的脚本
-                proc_n2                             # generate events的脚本
-                proc_n3                             # generate events的脚本
-                proc_n4                             # generate events的脚本
-                proc_n5                             # generate events的脚本
-                proc_mssm                           # generate events的脚本
-            proc_smusmu                         # generate events的脚本
-            run_chi.dat                         # 事例模拟所需要的run_card.dat模板文件
-            run_smu.dat                         # 事例模拟所需要的run_card.dat模板文件
-            gnmssm_chi.dat                      # checkmate输入模板文件
-            gnmssm_smusmu.dat                   # checkmate输入模板文件
+            template/                           # 所有运行事例模拟所需要的模板文件
+                proc/                               # 存放generate events脚本的文件夹
+                    proc_n1                             # generate events的脚本
+                    proc_n2                             # generate events的脚本
+                    proc_n3                             # generate events的脚本
+                    proc_n4                             # generate events的脚本
+                    proc_n5                             # generate events的脚本
+                    proc_mssm                           # generate events的脚本
+                proc_smusmu                         # generate events的脚本
+                run_chi.dat                         # 事例模拟所需要的run_card.dat模板文件
+                run_smu.dat                         # 事例模拟所需要的run_card.dat模板文件
+            checkmate_chi.dat                      # checkmate输入模板文件
+            checkmate_smusmu.dat                   # checkmate输入模板文件
 
         process_*/:                           # 单一的进程文件夹，项目调用多少进程就会有多少个这样的文件夹，下面的所有文件夹都是针对单一进程的
             CheckMATE/                          # 存放所有与Checkmate有关系的文件
                 ck_input.dat                        # Checkmate输入数据文件
                 CM_v2_26/                           # Checkmate主程序文件夹
                     bin/                              # Checkmate启动文件所在的文件夹
-                        gnmssm_chi.dat                  # Checkmate输入模板文件，从Project_prepare中复制而来
-                        gnmssm_smusmu.dat               # Checkmate输入模板文件，从Project_prepare中复制而来
+                        checkmate_chi.dat                  # Checkmate输入模板文件，从Project_prepare中复制而来
+                        checkmate_smusmu.dat               # Checkmate输入模板文件，从Project_prepare中复制而来
             Madgraph/                           # 存放所有与Madgraph有关系的文件
                 MG5_aMC_v2_6_4/                     # Madgraph主程序文件夹
             Results/                            # 存放所有结果的文件夹
@@ -56,8 +58,9 @@
     
     游离于根目录级之外的文件夹，这些文件可以存放在任何路径下：
         process_*/:                          # 运行事例模拟以及存放事例模拟结果的文件夹，项目调用多少进程就会有多少个这样的文件夹，这个目录可以是任何名字，可以在任何路径下
-            gnmssm_chi/                         # 模拟某一些过程的事例，这个例子中是与chi有关的
-            gnmssm_smusmu/                      # 模拟某一些过程的事例，这个例子中是与smu有关的
+            mg5_chi/                         # 模拟某一些过程的事例，这个例子中是与chi有关的
+            mg5_smusmu/                      # 模拟某一些过程的事例，这个例子中是与smu有关的
+            param_card.dat                   # mg5 运行所需要的的参数卡片，由SPheno输出谱生成 
             template/                           # 所有运行事例模拟所需要的模板文件，从Project_prepare中复制而来
                 proc/                               # 存放generate events脚本的文件夹
                     proc_n1                             # generate events的脚本
@@ -65,6 +68,7 @@
                     proc_n3                             # generate events的脚本
                     proc_n4                             # generate events的脚本
                     proc_n5                             # generate events的脚本
+                    proc_mssm                           # generate events的脚本
                 proc_chi                            # generate events的脚本
                 proc_smusmu                         # generate events的脚本
                 run_chi.dat                         # 事例模拟所需要的run_card.dat模板文件
@@ -83,6 +87,8 @@
         2022年5月：一个月以来修正了一些路径错误，改动很小所以没有写入开发日志中。
         2022年5月29日：pre_generate中的错误已经全部修正
         2022年5月30日：编写了Support_subprocess类中的prepare_CheckMATE方法和remove_old_CM_result方法
+        2022年5月31日：在Support_subprocess类中添加了一个after_ck_Execute方法
+        2022年6月1日：mg5的输入文件，事例生成文件夹和checkmate的输入文件统一修改为固定命名
 '''
 
 
@@ -91,6 +97,7 @@ import numpy as np
 import pandas as pd
 import os,sys,re
 import shutil
+import copy
 
 from mpi4py import MPI
 
@@ -104,7 +111,7 @@ class Base_message(object):
     属于第一大类
     '''
     def __init__(self, Event_root_path_, model_name_: str, size_: int, min_num_: int, max_num_: int, info_name_list_: list,
-                        Madgraph_inputs: list, Checkmate_inputs: list,  
+                         
                         main_path_: str = sys.path[0], data_path_: str = 'MC_data/', project_prepare_path_: str = 'Project_prepare/', process_name_: str = 'process',
                         comm_ = MPI.COMM_WORLD, rank_ = comm.Get_rank(), ranks_ = comm.Get_size()) -> None:
 
@@ -120,8 +127,6 @@ class Base_message(object):
         self.rank = rank_
         self.ranks = ranks_
         self.info_name_list = info_name_list_
-        self.Madgraph_inputs = Madgraph_inputs
-        self.Checkmate_inputs = Checkmate_inputs
         self.process_name = process_name_
         self.processes = self.get_process_name()
         self.generate_numbers_lst = self.get_generate_numbers_lst()
@@ -268,6 +273,7 @@ class Project_prepare(object):
         os.system(os.path.join(self.base_message.Madgraph_paths[i], 'MG5_aMC_v2_6_4/bin/mg5_aMC installP8'))
         os.chdir(self.base_message.main_path)
 
+        # 改
         for Madgraph_input in self.base_message.Madgraph_inputs:
             if os.path.isdir(os.path.join(self.base_message.project_prepare_path, Madgraph_input)):
                 shutil.copytree(os.path.join(self.base_message.project_prepare_path, Madgraph_input), os.path.join(self.base_message.Event_template_paths[i], Madgraph_input))
@@ -324,12 +330,12 @@ class Process_prepare(object):
         self.process_num = process_num_
         self.generate_numbers = self.base_message.generate_numbers_lst[self.process_num]
 
-    def refresh_ck_r(self) -> None:
+    def refresh_after_ck(self) -> None:
         '''
         刷新ck_r.txt文件。ck_r.txt是存放CheckMATE结果的文件，每次运行程序时，都会将ck_r.txt清空，然后将结果写入ck_r.txt。
         '''
-        os.chdir(self.base_message.after_ck_paths[self.process_num])                                               # 切换到ck结果存放路径
-        os.system('rm -rf after_ck/ck_r.txt')                                                       # 删除旧的ck结果文件
+        os.chdir(self.base_message.after_ck_paths[self.process_num])                                            # 切换到ck结果存放路径
+        os.system('rm -rf after_ck/*')                                                                          # 删除旧的ck结果文件
         #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中极有可能不同 !!!!
         with open(os.path.join(self.base_message.after_ck_paths[self.process_num], 'ck_r.txt'), 'w') as ck_r:
             ck_r.write("{}\t{}\t{}\t{}\n".format("robs", "rexp", "robscons", "rexpcons"))
@@ -443,6 +449,65 @@ class Support_subprocess(object):
             shutil.rmtree(os.path.join(self.base_message.CheckMATE_paths[self.process_num], 'results/'))
         else:
             pass 
+
+    def after_ck_Execute(self) -> None:
+        '''
+        在单次进程所有的CheckMate程序运行完成后，进行一些结果收集操作，结果存放在了ck_r.txt文件中
+        '''
+        def after_ck(self, data: pd.DataFrame  = self.base_message.data_df) -> float:
+            '''
+            修改自@张迪的代码，用于处理Checkmate结果的函数
+            详情咨询@张迪。
+            '''
+            os.chdir(self.base_message.process_paths[self.process_num])
+            Index = data['Index'].iloc[self.generate_number]
+            folder_dir = os.path.join(self.base_message.after_ck_paths[self.process_num], str(self.generate_number))
+            if not os.path.exists(folder_dir):
+                os.makedirs(folder_dir)
+            chi_save = os.path.abspath("{}/gnmssm_chi/Events/run_01/run_01_tag_1_banner.txt".format(self.base_message.Event_paths[self.process_num]))
+            os.system("cp {} {}/{}_chi.banner.txt".format(chi_save, folder_dir, Index))
+            smu_save = os.path.abspath("{}/gnmssm_smusmu/Events/run_01/run_01_tag_1_banner.txt".format(self.base_message.Event_paths[self.process_num]))
+            os.system("cp {} {}/{}_smu.banner.txt".format(smu_save, folder_dir, Index))
+            ck_dir = os.path.abspath("{}/CM_v2_26/results/".format(self.base_message.CheckMATE_paths[self.process_num]))
+            os.system("cp -r {}/gnmssm {}/{}_ck".format(ck_dir, folder_dir, Index))
+            os.system("rm -rf {}/{}_ck/mg5amcatnlo/".format(folder_dir, Index))
+            def turn(datalist):
+                return np.array(list(map(float, list(copy.copy(datalist)))))
+            def index_item(ite, itelis):
+                return list(itelis).index(ite)
+            def loaddata(data):
+                #analysis_ind = index_item("analysis", data[0, :])
+                #sr_ind = index_item("sr", data[0, :])
+                s_ind = index_item("s", data[0, :])
+                #s95_ind = index_item("s95obs", data[0, :])
+                s95obs_ind = index_item("s95obs", data[0, :])
+                s95exp_ind = index_item("s95exp", data[0, :])
+                #analysis = turn(data[1:, analysis_ind])
+                #sr = turn(data[1:, sr_ind])
+                s = turn(data[1:, s_ind])
+                s95obs = turn(data[1:, s95obs_ind])
+                s96exp = turn(data[1:, s95exp_ind])
+                robscons_ind = index_item("robscons", data[0, :])
+                robscons = turn(data[1:, robscons_ind])
+                rexpcons_ind = index_item("rexpcons", data[0, :])
+                rexpcons = turn(data[1:, rexpcons_ind])
+                return s, s95obs, s96exp, s/s95obs, s/s96exp, robscons, rexpcons
+            if not os.path.exists("{}/gnmssm/evaluation/total_results.txt".format(ck_dir)):
+                s=s95obs=s95exp=robs=rexp=robscons=rexpcons  = turn([-1,-3])
+            else:
+                data_ck = np.loadtxt("{}/gnmssm/evaluation/total_results.txt".format(ck_dir), dtype=str)
+                s, s95obs, s95exp, robs, rexp, robscons, rexpcons = loaddata(data_ck)
+            #data_ck_cms = np.loadtxt("{}/ck_cms/evaluation/total_results.txt".format(ck_dir), dtype=str)
+            #s_cms, s95obs_cms, s95exp_cms, robs_cms, rexp_cms, robscons_cms, rexpcons_cms = loaddata(data_ck_cms)
+            # os.system("rm -rf {}/*".format(ck_dir))
+            return folder_dir, Index, max(robs), max(rexp), max(robscons), max(rexpcons)
+        
+        os.chdir(self._Support_path)                                                     # 切换到ck结果存放路径
+        #   !!!! 注意，以下内容旨在输出必要的数据，因此在不同的项目中有可能不同 !!!!
+        folder_dir, self.Index, self.robs, self.rexp, self.robscons, self.rexpcons = after_ck(self)
+        with open("{}/after_ck/ck_r.txt".format(self._Support_path), 'a') as ck_r:
+            ck_r.write("{}\t{}\t{}\t{}\n".format(self.robs, self.rexp, self.robscons, self.rexpcons))
+        os.chdir(self._main_path)
 
 
 
